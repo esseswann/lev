@@ -17,7 +17,7 @@ $my_table = select *
 Moreover unlike Hasura permissions are also implemented in this way, which is actually more flexible.
 
 ## Serverless
-The whole reason this library was created is to have a stateless coverter for serverless use
+The whole reason this library was created is to have a stateless coverter for serverless use. It can be used in a [serverless function](https://cloud.yandex.ru/docs/functions/)
 
 ## Status
 - [x] Queries

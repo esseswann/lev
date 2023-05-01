@@ -17,10 +17,12 @@
     "semi": false,
     "singleQuote": true
   },
-  "dependencies": {
-    "graphql": "16.6.0",
+  "devDependencies": {
     "node": "19.8.1",
     "ts-node": "10.9.1",
     "ydb-sdk": "4.5.0"
+  },
+  "dependencies": {
+    "graphql": "16.*"
   }
 }
