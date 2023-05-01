@@ -1,0 +1,17 @@
+{
+  "include": ["./src/**/*"],
+  "compilerOptions": {
+    "outDir": "lib",
+    "strict": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "module": "NodeNext",
+    "target": "ES2022",
+    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "experimentalDecorators": true
+  }
+}
