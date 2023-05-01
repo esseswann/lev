@@ -1,7 +1,7 @@
 import { ObjectFieldNode, ObjectValueNode } from 'graphql'
 import { Output, isObject } from '..'
-import { EntityConfig, GetFromSchema, getJoinExpressions } from '../..'
-import { Relationship } from '../../metadata'
+import { EntityConfig, GetFromSchema } from '../..'
+import handleRelationship from '../handleRelationship'
 import operators from './operators'
 
 function* where(
@@ -12,31 +12,9 @@ function* where(
   for (const field of value.fields) {
     const relationship = schema(parent, field)
     yield* relationship
-      ? handleRelationship(schema, parent, field, relationship)
+      ? handleRelationship(schema, parent, field, relationship, where)
       : handleWhereField(parent, field)
   }
-}
-
-function* handleRelationship(
-  schema: GetFromSchema,
-  parent: EntityConfig,
-  field: ObjectFieldNode,
-  relationship: Relationship
-): Output {
-  const name = `relationship_${field.name.value}`
-  const relationshipConfig = {
-    ...relationship,
-    name,
-    source: parent.name,
-    joinColumns: '',
-  }
-  const { onExpressions } = getJoinExpressions(relationshipConfig)
-  yield {
-    kind: 'joins',
-    data: `left join \`${relationship.tableName}\` ${name} on ${onExpressions}`,
-  }
-  if (isObject(field.value))
-    yield* where(schema, relationshipConfig, field.value)
 }
 
 function* handleWhereField(

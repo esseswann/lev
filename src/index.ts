@@ -46,10 +46,14 @@ const getSelect = (
     selections += `, ${config.joinColumns}`
     groupBy = `group by ${config.joinColumns}`
   }
+  const tail = [config.name]
   const args = getArguments(schema, config, selection.arguments!)
-  const where = args.where.size ? `where ${[...args.where].join(' and ')}` : ''
-  const preparedJoins = joins.concat([...args.joins]).join(' ')
-  return `select ${selections} from \`${config.tableName}\` as ${config.name} ${preparedJoins} ${where} ${groupBy}`
+  tail.push(joins.concat([...args.joins]).join(' '))
+  if (args.where.size) tail.push(`where ${[...args.where].join(' and ')}`)
+  if (args.orderBy.size) tail.push(`order by ${[...args.orderBy].join(',')}`)
+  if (groupBy) tail.push(groupBy)
+  const preparedTail = tail.join(' ')
+  return `select ${selections} from \`${config.tableName}\` as ${preparedTail}`
 }
 
 const getRelationship = (
