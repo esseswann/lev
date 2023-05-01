@@ -15,7 +15,7 @@ function* handleRelationship(
     ...relationship,
     name,
     source: parent.name,
-    joinColumns: '',
+    joinColumns: '', // FIXME this is wrong
   }
   const { onExpressions } = getJoinExpressions(relationshipConfig)
   yield {
