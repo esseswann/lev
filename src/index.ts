@@ -47,8 +47,8 @@ const getSelect = (
     groupBy = `group by ${config.joinColumns}`
   }
   const args = getArguments(schema, config, selection.arguments!)
-  const where = args.where.length ? `where ${args.where.join(' and ')}` : ''
-  const preparedJoins = joins.concat(args.joins).join(' ')
+  const where = args.where.size ? `where ${[...args.where].join(' and ')}` : ''
+  const preparedJoins = joins.concat([...args.joins]).join(' ')
   return `select ${selections} from \`${config.tableName}\` as ${config.name} ${preparedJoins} ${where} ${groupBy}`
 }
 
