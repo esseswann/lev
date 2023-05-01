@@ -1,7 +1,7 @@
 # lev
 
 [Hasura](https://hasura.io/)-like GraphQL to [YDB](https://ydb.tech)-flavored SQL converter for serverless use \
-Named after count [Leo Tolstoy](https://tolstoy.ru/), which in Russian reads as `graph Lev Tolstoy`
+Named after count [Leo Tolstoy](https://tolstoy.ru/), which in Russian reads as `graph Lev Tolstoy`. Yandex's HQ is also located on the Tolsoty street
 
 ## Similarities to Hasura
 Like Hasura provides GraphQL interface to a specific SQL database, in this case YDB. Requires a metadata description of relationship between the tables and allows for flexible permission rules
