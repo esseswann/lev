@@ -28,4 +28,4 @@ The whole reason this library was created is to have a stateless coverter for se
 - [ ] Interfaces
 
 ## Naming
-Named after count [Leo Tolstoy](https://tolstoy.ru/), which in Russian reads as `graph Lev Tolstoy`. Yandex's HQ is also located on the Tolstoy street
+Named after count [Leo Tolstoy](https://tolstoy.ru/), which in Russian reads as `graph Lev Tolstoy`. Yandex's HQ is also located on the [Tolstoy street](https://yandex.ru/maps/org/yandeks/1124715036/?ll=37.587093%2C55.733974&z=16)
