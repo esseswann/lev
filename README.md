@@ -20,10 +20,10 @@ Moreover unlike Hasura permissions are also implemented in this way, which is ac
 The whole reason this library was created is to have a stateless coverter for serverless use
 
 ## Status
-[] Queries \
-[] Mutations \
-[] Type-casting for non-primitive types \
-[] Subscriptions
-[] Fragments
-[] Unions
-[] Interfaces
+- [x] Queries
+- [ ] Mutations
+- [ ] Type-casting for non-primitive types
+- [ ] Subscriptions
+- [ ] Fragments
+- [ ] Unions
+- [ ] Interfaces
