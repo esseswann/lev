@@ -8,12 +8,8 @@ import {
   StringValueNode,
   ValueNode,
 } from 'graphql'
-import {
-  EntityConfig,
-  GetFromSchema,
-  Relationship,
-  getJoinExpressions,
-} from '.'
+import { EntityConfig, GetFromSchema, getJoinExpressions } from '.'
+import { Relationship } from './metadata'
 
 const getArguments = (
   schema: GetFromSchema,

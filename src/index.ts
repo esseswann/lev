@@ -7,6 +7,7 @@ import {
   SelectionSetNode,
 } from 'graphql'
 import getArguments from './args'
+import { Relationship, Schema } from './metadata'
 
 const ROWS = 'rows'
 
@@ -144,22 +145,11 @@ export type EntityConfig = {
   joinColumns: string
 }
 
-export type Relationship = {
-  tableName: string
-  columnMapping: ColumnMapping[]
-}
-
 type RelationshipConfig = Relationship & {
   name: string
   source: string
 }
 
-type ColumnMapping = {
-  sourceColumn: string
-  targetColumn: string
-}
-
-export type Schema = Map<string, Relationship>
 export type GetFromSchema = (
   parent: EntityConfig,
   field: ObjectFieldNode | FieldNode
