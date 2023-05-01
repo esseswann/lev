@@ -3,7 +3,7 @@
 [Hasura](https://hasura.io/)-like GraphQL to [YDB](https://ydb.tech)-flavored SQL converter for serverless use
 
 ## Similarities to Hasura
-Like Hasura provides GraphQL interface to a specific SQL database, in this case YDB. Requires a metadata description of relationship between the tables and allows for flexible permission rules
+Like Hasura provides GraphQL interface to a specific SQL database, in this case YDB. Requires a [metadata](src/metadata.ts) description of relationship between the tables and allows for flexible permission rules
 
 ## Differences from Hasura
 Since YDB does not have views, their implementation is based around named variables like
