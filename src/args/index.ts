@@ -1,6 +1,5 @@
 import { ArgumentNode, Kind, ObjectValueNode, ValueNode } from 'graphql'
 import { EntityConfig, GetFromSchema } from '..'
-import orderBy from './orderBy'
 import where from './where'
 
 const getArguments = (
@@ -26,7 +25,7 @@ const getArguments = (
 
 const handlers: Record<string, Handler> = {
   where,
-  orderBy,
+  // orderBy,
 }
 
 export const isObject = (
