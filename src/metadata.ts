@@ -1,3 +1,9 @@
+export const prepareView = (str: string) => {
+  let trimmed = str.replace(/\s{1,}/g, ' ').trim()
+  if (trimmed[trimmed.length - 1] !== ';') trimmed += ';'
+  return trimmed
+}
+
 export type Schema = Map<Key, Relationship>
 
 type TablePath = string
