@@ -11,16 +11,16 @@ import { Relationship, Schema } from './metadata'
 
 const ROWS = 'rows'
 
-const convert = (schema: Schema, query: OperationDefinitionNode) => {
-  const getFromSchema = getRelationshipHandler(schema)
-  return query.selectionSet.selections
-    .filter(isField)
-    .map((selection) =>
-      getSelect(getFromSchema, getConfig(selection), selection)
-    )
+const convert = (schema: Schema, operation: OperationDefinitionNode) => {
+  const expressions = new Set<string>()
+  const getFromSchema = getRelationshipHandler(schema, expressions)
+  for (const selection of operation.selectionSet.selections)
+    if (isField(selection))
+      expressions.add(getSelect(getFromSchema, getConfig(selection), selection))
+  return [...expressions.values()].join('\n')
 }
 
-const getConfig = (selection: FieldNode) => {
+const getConfig = (selection: FieldNode): EntityConfig => {
   const name = selection.name.value
   return {
     name,
@@ -29,7 +29,7 @@ const getConfig = (selection: FieldNode) => {
   }
 }
 
-const getToplevelName = (name: string) => name.replace('_', '/')
+const getToplevelName = (name: string) => `\`${name.replace('_', '/')}\``
 
 const getSelect = (
   schema: GetFromSchema,
@@ -53,7 +53,7 @@ const getSelect = (
   if (args.orderBy.size) tail.push(`order by ${[...args.orderBy].join(',')}`)
   if (groupBy) tail.push(groupBy)
   const preparedTail = tail.join(' ')
-  return `select ${selections} from \`${config.tableName}\` as ${preparedTail}`
+  return `select ${selections} from ${config.tableName} as ${preparedTail}`
 }
 
 const getRelationship = (
@@ -139,9 +139,12 @@ const isField = (selection: SelectionNode): selection is FieldNode => {
 }
 
 const getRelationshipHandler =
-  (schema: Schema): GetFromSchema =>
-  (parent, field) =>
-    schema.get(`${parent.tableName}.${field.name.value}`)
+  (schema: Schema, views: Set<string>): GetFromSchema =>
+  (parent, field) => {
+    const config = schema.get(`${parent.tableName}.${field.name.value}`)
+    if (config?.view) views.add(config?.view)
+    return config
+  }
 
 export type EntityConfig = {
   name: string

@@ -7,6 +7,7 @@ export type Key = `${TablePath}.${ColumnName}`
 export type Relationship = {
   tableName: string
   columnMapping: ColumnMapping[]
+  view?: string
 }
 
 export type ColumnMapping = {

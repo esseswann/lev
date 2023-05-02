@@ -20,7 +20,7 @@ function* handleRelationship(
   const { onExpressions } = getJoinExpressions(relationshipConfig)
   yield {
     kind: 'joins',
-    data: `left join \`${relationship.tableName}\` ${name} on ${onExpressions}`,
+    data: `left join ${relationship.tableName} ${name} on ${onExpressions}`,
   }
   if (isObject(field.value))
     yield* handler(schema, relationshipConfig, field.value)
