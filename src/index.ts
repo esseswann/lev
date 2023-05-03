@@ -5,10 +5,10 @@ import {
   OperationDefinitionNode,
   SelectionNode,
   SelectionSetNode,
-  VariableDefinitionNode,
 } from 'graphql'
 import getArguments from './args'
 import { Relationship, Schema } from './metadata'
+import getVariable from './variables'
 
 const ROWS = 'rows'
 
@@ -19,32 +19,22 @@ const convert = (schema: Schema, operation: OperationDefinitionNode) => {
     for (const variable of operation.variableDefinitions)
       expressions.add(getVariable(variable))
   for (const selection of operation.selectionSet.selections)
-    if (isField(selection))
-      expressions.add(getSelect(getFromSchema, getConfig(selection), selection))
+    if (isField(selection)) {
+      const relationship = getFromSchema({ tableName: 'query' }, selection)
+      if (!relationship)
+        throw new Error(
+          `Unknown root field ${selection.name.value}. Did you forget to add a view for it?`
+        )
+      const config = {
+        ...relationship,
+        name: selection.name.value,
+        joinColumns: '',
+      }
+      const expression = getSelect(getFromSchema, config, selection)
+      expressions.add(expression)
+    }
   return [...expressions.values()].join('\n')
 }
-
-const getConfig = (selection: FieldNode): EntityConfig => {
-  const name = selection.name.value
-  return {
-    name,
-    tableName: getToplevelName(name),
-    joinColumns: '',
-  }
-}
-
-const getVariable = (variable: VariableDefinitionNode) => {
-  if (
-    variable.type.kind !== Kind.NAMED_TYPE ||
-    variable.defaultValue?.kind === Kind.LIST ||
-    variable.defaultValue?.kind === Kind.OBJECT ||
-    variable.defaultValue?.kind === Kind.NULL
-  )
-    throw new Error('Only named types are supported')
-  return `$${variable.variable.name.value} = Cast('${variable.defaultValue?.value}' as ${variable.type.name.value});`
-}
-
-const getToplevelName = (name: string) => `\`${name.replace('_', '/')}\``
 
 const getSelect = (
   schema: GetFromSchema,
@@ -173,7 +163,7 @@ type RelationshipConfig = Relationship & {
 }
 
 export type GetFromSchema = (
-  parent: EntityConfig,
+  parent: Pick<EntityConfig, 'tableName'>,
   field: ObjectFieldNode | FieldNode
 ) => Relationship | undefined
 
