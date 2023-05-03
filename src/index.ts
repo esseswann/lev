@@ -5,6 +5,7 @@ import {
   OperationDefinitionNode,
   SelectionNode,
   SelectionSetNode,
+  VariableDefinitionNode,
 } from 'graphql'
 import getArguments from './args'
 import { Relationship, Schema } from './metadata'
@@ -14,6 +15,9 @@ const ROWS = 'rows'
 const convert = (schema: Schema, operation: OperationDefinitionNode) => {
   const expressions = new Set<string>()
   const getFromSchema = getRelationshipHandler(schema, expressions)
+  if (operation.variableDefinitions)
+    for (const variable of operation.variableDefinitions)
+      expressions.add(getVariable(variable))
   for (const selection of operation.selectionSet.selections)
     if (isField(selection))
       expressions.add(getSelect(getFromSchema, getConfig(selection), selection))
@@ -27,6 +31,17 @@ const getConfig = (selection: FieldNode): EntityConfig => {
     tableName: getToplevelName(name),
     joinColumns: '',
   }
+}
+
+const getVariable = (variable: VariableDefinitionNode) => {
+  if (
+    variable.type.kind !== Kind.NAMED_TYPE ||
+    variable.defaultValue?.kind === Kind.LIST ||
+    variable.defaultValue?.kind === Kind.OBJECT ||
+    variable.defaultValue?.kind === Kind.NULL
+  )
+    throw new Error('Only named types are supported')
+  return `$${variable.variable.name.value} = Cast('${variable.defaultValue?.value}' as ${variable.type.name.value});`
 }
 
 const getToplevelName = (name: string) => `\`${name.replace('_', '/')}\``
