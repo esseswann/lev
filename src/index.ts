@@ -74,7 +74,7 @@ const getRelationship = (
     joinColumns,
   }
   const select = getSelect(schema, entityConfig, selection)
-  return `left join (${select}) as ${relationship.name} on ${onExpressions}` // FIXME agg_list is empty
+  return `left join (${select}) as ${relationship.alias} on ${onExpressions}` // FIXME agg_list is empty
 }
 
 const handleRelationship = (
@@ -87,6 +87,7 @@ const handleRelationship = (
   console.log(config.name, selection.name.value)
   const relationshipConfig = {
     ...config,
+    alias: selection.name.value,
     source: parent.alias,
   }
   return getRelationship(schema, selection, relationshipConfig)
@@ -123,15 +124,15 @@ const getField = (
 }
 
 export const getJoinExpressions = ({
-  name,
+  alias,
   source,
   columnMapping,
 }: RelationshipConfig) => {
   const joinColumns: string[] = []
   const predicates: string[] = []
-  for (const { sourceColumn, targetColumn } of columnMapping) {
-    joinColumns.push(targetColumn)
-    predicates.push(`${source}.${sourceColumn} = ${name}.${targetColumn}`)
+  for (const mapping of columnMapping) {
+    joinColumns.push(mapping.target)
+    predicates.push(`${source}.${mapping.source} = ${alias}.${mapping.target}`)
   }
   return {
     joinColumns: joinColumns.join(','),
@@ -159,7 +160,7 @@ export type EntityConfig = {
   joinColumns: string
 }
 
-type RelationshipConfig = Relationship & { source: string }
+type RelationshipConfig = Relationship & { alias: string; source: string }
 
 export type GetFromSchema = (
   parent: Pick<EntityConfig, 'name'>,

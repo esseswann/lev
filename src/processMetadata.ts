@@ -29,24 +29,12 @@ const processMetadata = async (directory: string): Promise<Schema> => {
         name: relationship.target,
         alias: key,
         view: view.view,
-        columnMapping: prepareColumnMapping(relationship.column_mapping),
+        columnMapping: relationship.column_mapping,
       }
       schema.set(`${filename}.${key}`, relationshipConfig)
     }
   }
   return schema
-}
-
-const prepareColumnMapping = (
-  columnMapping: Relationship['column_mapping']
-) => {
-  const result: ColumnMapping[] = []
-  for (const sourceColumn in columnMapping)
-    result.push({
-      sourceColumn,
-      targetColumn: columnMapping[sourceColumn],
-    })
-  return result
 }
 
 async function* iterateDirectory(directory: string) {
@@ -69,7 +57,7 @@ type Relationships = Record<string, Relationship>
 type Relationship = {
   target: string
   cardinality: Cardinality
-  column_mapping: Record<string, string>
+  column_mapping: ColumnMapping[]
 }
 
 type Cardinality = 'many' | 'one'

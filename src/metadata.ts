@@ -24,6 +24,6 @@ export type Relationship = {
 }
 
 export type ColumnMapping = {
-  sourceColumn: string
-  targetColumn: string
+  source: string
+  target: string
 }
