@@ -21,7 +21,7 @@ function* handleOrderByField(
   parent: EntityConfig,
   field: ObjectFieldNode
 ): Output {
-  const name = parent.name
+  const name = parent.alias
   if (field.value.kind !== Kind.ENUM)
     throw new Error(`Order by argument be enum not ${field.value.kind}`)
   const value = variants[field.value.value]

@@ -15,23 +15,23 @@ const processMetadata = async (directory: string): Promise<Schema> => {
     const view = await content.then(prepareView)
     schema.set(`${QUERY}.${filename}`, {
       view,
-      tableName: filename,
+      name: filename,
       columnMapping: [],
     })
   }
   for await (const { filename, content } of iterateDirectory(configsPath)) {
-    const view = schema.get(`${QUERY}.${filename}`)
-    if (!view) throw new Error(`No view present for ${filename}`)
     const config = (await content.then(yaml.parse)) as EntityConfig
-    for (const name in config.relationships) {
+    for (const key in config.relationships) {
+      const relationship = config.relationships[key]
+      const view = schema.get(`${QUERY}.${relationship.target}`)
+      if (!view) throw new Error(`No view present for ${filename}`)
       const relationshipConfig = {
-        tableName: view.tableName,
+        name: relationship.target,
+        alias: key,
         view: view.view,
-        columnMapping: prepareColumnMapping(
-          config.relationships[name].column_mapping
-        ),
+        columnMapping: prepareColumnMapping(relationship.column_mapping),
       }
-      schema.set(`${filename}.${name}`, relationshipConfig)
+      schema.set(`${filename}.${key}`, relationshipConfig)
     }
   }
   return schema
@@ -66,6 +66,7 @@ type EntityConfig = {
 type Relationships = Record<string, Relationship>
 
 type Relationship = {
+  target: string
   cardinality: Cardinality
   column_mapping: MetadataColumnMapping
 }

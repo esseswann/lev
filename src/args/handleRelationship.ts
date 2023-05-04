@@ -10,17 +10,19 @@ function* handleRelationship(
   relationship: Relationship,
   handler: Handler
 ): Output {
-  const name = `relationship_${field.name.value}`
+  const alias = `relationship_${field.name.value}`
   const relationshipConfig = {
-    ...relationship,
-    name,
-    source: parent.name,
+    alias,
+    name: relationship.name,
+    source: parent.alias,
+    view: relationship.view,
+    columnMapping: relationship.columnMapping,
     joinColumns: '', // FIXME this is wrong
   }
   const { onExpressions } = getJoinExpressions(relationshipConfig)
   yield {
     kind: 'joins',
-    data: `left join ${relationship.tableName} ${name} on ${onExpressions}`,
+    data: `left join $${relationship.name} as ${alias} on ${onExpressions}`,
   }
   if (isObject(field.value))
     yield* handler(schema, relationshipConfig, field.value)

@@ -18,9 +18,9 @@ type ColumnName = string
 export type Key = `${TablePath}.${ColumnName}`
 
 export type Relationship = {
-  tableName: string
+  name: string
+  view: string
   columnMapping: ColumnMapping[]
-  view?: string
 }
 
 export type ColumnMapping = {

@@ -34,6 +34,6 @@ function* handleWhereField(
 }
 
 const getLeft = (parent: EntityConfig, field: ObjectFieldNode) =>
-  `${parent.name}.${field.name.value}`
+  `${parent.alias}.${field.name.value}`
 
 export default where
