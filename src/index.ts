@@ -19,22 +19,27 @@ const convert = (schema: Schema, operation: OperationDefinitionNode) => {
     for (const variable of operation.variableDefinitions)
       expressions.add(getVariable(variable))
   for (const selection of operation.selectionSet.selections)
-    if (isField(selection)) {
-      const relationship = getFromSchema({ name: 'query' }, selection)
-      if (!relationship)
-        throw new Error(
-          `Unknown root field ${selection.name.value}. Did you forget to add a view for it?`
-        )
-      const config = {
-        name: relationship.name,
-        alias: relationship.name,
-        view: relationship.view,
-        joinColumns: '',
-      }
-      const expression = getSelect(getFromSchema, config, selection)
-      expressions.add(expression)
-    }
+    if (isField(selection))
+      expressions.add(getRootExpression(getFromSchema, selection))
   return [...expressions.values()].join('\n')
+}
+
+const getRootExpression = (
+  getFromSchema: GetFromSchema,
+  selection: FieldNode
+) => {
+  const relationship = getFromSchema({ name: 'query' }, selection)
+  if (!relationship)
+    throw new Error(
+      `Unknown root field ${selection.name.value}. Did you forget to add a view for it?`
+    )
+  const config = {
+    name: relationship.name,
+    alias: relationship.name,
+    view: relationship.view,
+    joinColumns: '',
+  }
+  return getSelect(getFromSchema, config, selection)
 }
 
 const getSelect = (

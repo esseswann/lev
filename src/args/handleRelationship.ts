@@ -12,11 +12,9 @@ function* handleRelationship(
 ): Output {
   const alias = `relationship_${field.name.value}`
   const relationshipConfig = {
+    ...relationship,
     alias,
     source: parent.alias,
-    name: relationship.name,
-    view: relationship.view,
-    mapping: relationship.mapping,
     joinColumns: '', // FIXME this is wrong
   }
   const { onExpressions } = getJoinExpressions(relationshipConfig)
