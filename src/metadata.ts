@@ -20,10 +20,13 @@ export type Key = `${TablePath}.${ColumnName}`
 export type Relationship = {
   name: string
   view: string
-  columnMapping: ColumnMapping[]
+  // cardinality: Cardinality
+  mapping: ColumnMapping[]
 }
 
 export type ColumnMapping = {
   source: string
   target: string
 }
+
+// type Cardinality = 'many' | 'one'

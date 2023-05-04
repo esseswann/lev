@@ -126,7 +126,7 @@ const getField = (
 export const getJoinExpressions = ({
   alias,
   source,
-  columnMapping,
+  mapping: columnMapping,
 }: RelationshipConfig) => {
   const joinColumns: string[] = []
   const predicates: string[] = []
