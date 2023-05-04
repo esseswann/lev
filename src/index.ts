@@ -11,6 +11,7 @@ import { Relationship, Schema } from './metadata'
 import getVariable from './variables'
 
 const ROWS = 'rows'
+const QUERY = { name: 'query', alias: 'query', joinColumns: '' }
 
 const convert = (schema: Schema, operation: OperationDefinitionNode) => {
   const expressions = new Set<string>()
@@ -20,26 +21,10 @@ const convert = (schema: Schema, operation: OperationDefinitionNode) => {
       expressions.add(getVariable(variable))
   for (const selection of operation.selectionSet.selections)
     if (isField(selection))
-      expressions.add(getRootExpression(getFromSchema, selection))
+      expressions.add(
+        handleRelationship(getFromSchema, QUERY, selection, getSelect)
+      )
   return [...expressions.values()].join('\n')
-}
-
-const getRootExpression = (
-  getFromSchema: GetFromSchema,
-  selection: FieldNode
-) => {
-  const relationship = getFromSchema({ name: 'query' }, selection)
-  if (!relationship)
-    throw new Error(
-      `Unknown root field ${selection.name.value}. Did you forget to add a view for it?`
-    )
-  const config = {
-    name: relationship.name,
-    alias: relationship.name,
-    view: relationship.view,
-    joinColumns: '',
-  }
-  return getSelect(getFromSchema, config, selection)
 }
 
 const getSelect = (
@@ -69,8 +54,8 @@ const getSelect = (
 
 const getRelationship = (
   schema: GetFromSchema,
-  selection: FieldNode,
-  relationship: RelationshipConfig
+  relationship: RelationshipConfig,
+  selection: FieldNode
 ) => {
   const { joinColumns, onExpressions } = getJoinExpressions(relationship)
   const entityConfig = {
@@ -83,19 +68,24 @@ const getRelationship = (
 }
 
 const handleRelationship = (
-  schema: GetFromSchema,
+  getFromSchema: GetFromSchema,
   parent: EntityConfig,
-  selection: FieldNode
+  selection: FieldNode,
+  handler: (
+    schema: GetFromSchema,
+    relationship: RelationshipConfig & EntityConfig,
+    selection: FieldNode
+  ) => string
 ): string => {
-  const config = schema(parent, selection)
+  const config = getFromSchema(parent, selection)
   if (!config) throw new Error(`No ${selection.name} in ${parent.alias}`)
-  console.log(config.name, selection.name.value)
   const relationshipConfig = {
     ...config,
     alias: selection.name.value,
     source: parent.alias,
+    joinColumns: '',
   }
-  return getRelationship(schema, selection, relationshipConfig)
+  return handler(getFromSchema, relationshipConfig, selection)
 }
 
 const getSelections = (
@@ -109,7 +99,9 @@ const getSelections = (
     if (isField(selection)) {
       result.push(getField(config.alias, selection))
       if (selection.selectionSet?.selections.length)
-        joins.push(handleRelationship(schema, config, selection))
+        joins.push(
+          handleRelationship(schema, config, selection, getRelationship)
+        )
     }
   return {
     selections: `agg_list(<|${result.join(',')}|>) as ${ROWS}`,
