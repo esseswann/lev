@@ -1,3 +1,10 @@
+import jsConvert from 'js-convert-case'
+
+export const convertCase = (str: string) => {
+  const result = jsConvert.toCamelCase(str)
+  return result
+}
+
 export const prepareView = (str: string) => {
   let trimmed = str.replace(/\s{1,}/g, ' ').trim()
   if (trimmed[trimmed.length - 1] !== ';') trimmed += ';'
