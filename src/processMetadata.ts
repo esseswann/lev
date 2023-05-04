@@ -37,14 +37,15 @@ const processMetadata = async (directory: string): Promise<Schema> => {
   return schema
 }
 
-const prepareColumnMapping = (columnMapping: MetadataColumnMapping) => {
+const prepareColumnMapping = (
+  columnMapping: Relationship['column_mapping']
+) => {
   const result: ColumnMapping[] = []
-  for (const key in columnMapping) {
+  for (const sourceColumn in columnMapping)
     result.push({
-      sourceColumn: key,
-      targetColumn: columnMapping[key],
+      sourceColumn,
+      targetColumn: columnMapping[sourceColumn],
     })
-  }
   return result
 }
 
@@ -68,10 +69,9 @@ type Relationships = Record<string, Relationship>
 type Relationship = {
   target: string
   cardinality: Cardinality
-  column_mapping: MetadataColumnMapping
+  column_mapping: Record<string, string>
 }
 
 type Cardinality = 'many' | 'one'
-type MetadataColumnMapping = Record<string, string>
 
 export default processMetadata
