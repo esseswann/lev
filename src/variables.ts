@@ -1,9 +1,7 @@
 import { ConstValueNode, Kind, VariableDefinitionNode } from 'graphql'
 
-const getVariable = (variable: VariableDefinitionNode) => {
-  const handler = getHandler(variable.type)
-  return handler(variable)
-}
+const getVariable = (variable: VariableDefinitionNode) =>
+  getHandler(variable.type)(variable)
 
 const getHandler = (type: VariableDefinitionNode['type']): Handler => {
   switch (type.kind) {
