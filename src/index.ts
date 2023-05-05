@@ -64,7 +64,8 @@ const getRelationship = (
     joinColumns,
   }
   const select = getSelect(schema, entityConfig, selection)
-  return `left join (${select}) as ${relationship.alias} on ${onExpressions}` // FIXME agg_list is empty
+  return `left join (${select}) as ${relationship.alias} on ${onExpressions}`
+  // FIXME when agg_list is empty so it does not return empty array
 }
 
 const handleRelationship = (
