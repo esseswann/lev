@@ -1,11 +1,10 @@
 import { promises as fs } from 'fs'
-import * as t from 'io-ts'
 import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
 
 import { isLeft } from 'fp-ts/lib/These'
-import { Mapping, Schema } from './metadata'
+import { EntityConfig, Schema } from '.'
 
 const VIEWS = 'views'
 const CONFIGS = 'configs'
@@ -76,16 +75,5 @@ const prepareView = (str: string) => {
   if (trimmed[trimmed.length - 1] !== ';') trimmed += ';'
   return trimmed
 }
-
-export const RelationshipConfig = t.type({
-  name: t.string,
-  mapping: t.array(Mapping)
-})
-
-const Relationships = t.record(t.string, RelationshipConfig)
-
-const EntityConfig = t.type({
-  relationships: Relationships
-})
 
 export default processMetadata

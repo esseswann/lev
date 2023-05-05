@@ -15,12 +15,12 @@ function* handleRelationship(
     ...relationship,
     alias,
     source: parent.alias,
-    joinColumns: '', // FIXME this is wrong
+    joinColumns: '' // FIXME this is wrong
   }
   const { onExpressions } = getJoinExpressions(relationshipConfig)
   yield {
     kind: 'joins',
-    data: `left join $${relationship.name} as ${alias} on ${onExpressions}`,
+    data: `left join $${relationship.name} as ${alias} on ${onExpressions}`
   }
   if (isObject(field.value))
     yield* handler(schema, relationshipConfig, field.value)

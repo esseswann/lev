@@ -4,7 +4,7 @@ import {
   ObjectFieldNode,
   OperationDefinitionNode,
   SelectionNode,
-  SelectionSetNode,
+  SelectionSetNode
 } from 'graphql'
 import getArguments from './args'
 import { Relationship, Schema } from './metadata'
@@ -61,7 +61,7 @@ const getRelationship = (
   const entityConfig = {
     alias: selection.name.value,
     name: relationship.name,
-    joinColumns,
+    joinColumns
   }
   const select = getSelect(schema, entityConfig, selection)
   return `left join (${select}) as ${relationship.alias} on ${onExpressions}`
@@ -84,7 +84,7 @@ const handleRelationship = (
     ...config,
     alias: selection.name.value,
     source: parent.alias,
-    joinColumns: '',
+    joinColumns: ''
   }
   return handler(getFromSchema, relationshipConfig, selection)
 }
@@ -106,7 +106,7 @@ const getSelections = (
     }
   return {
     selections: `agg_list(<|${result.join(',')}|>) as ${ROWS}`,
-    joins,
+    joins
   }
 }
 
@@ -124,7 +124,7 @@ const getField = (
 export const getJoinExpressions = ({
   alias,
   source,
-  mapping: columnMapping,
+  mapping: columnMapping
 }: RelationshipConfig) => {
   const joinColumns: string[] = []
   const predicates: string[] = []
@@ -134,7 +134,7 @@ export const getJoinExpressions = ({
   }
   return {
     joinColumns: joinColumns.join(','),
-    onExpressions: predicates.join(' and '),
+    onExpressions: predicates.join(' and ')
   }
 }
 
