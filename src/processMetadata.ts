@@ -1,8 +1,11 @@
 import { promises as fs } from 'fs'
+import * as t from 'io-ts'
+import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
 
-import { Relationship, Schema, prepareView } from './metadata'
+import { isLeft } from 'fp-ts/lib/These'
+import { Mapping, Schema } from './metadata'
 
 const VIEWS = 'views'
 const CONFIGS = 'configs'
@@ -24,20 +27,16 @@ async function processMetadata(directory: string): Promise<Schema> {
   }
 
   for await (const { name, content } of iterateDirectory(configsPath)) {
-    const config = yaml.parse(content) as EntityConfig
+    const config = fromYaml(content)
 
     for (const [key, relationship] of Object.entries(config.relationships)) {
-      const view = schema.get(`${QUERY}.${relationship.name}`)
+      const target = schema.get(`${QUERY}.${relationship.name}`)
 
-      if (!view) {
-        throw new Error(`No view present for ${name}`)
-      }
+      if (!target) throw new Error(`No view present for ${name}`)
 
       const relationshipConfig = {
-        name: relationship.name,
-        alias: key,
-        view: view.view,
-        mapping: relationship.mapping,
+        ...relationship,
+        view: target.view,
       }
 
       schema.set(`${name}.${key}`, relationshipConfig)
@@ -57,10 +56,28 @@ async function* iterateDirectory(directory: string) {
   }
 }
 
-type EntityConfig = {
-  relationships: Relationships
+const fromYaml = (input: string) => {
+  const json = yaml.parse(input)
+  const result = EntityConfig.decode(json)
+  if (isLeft(result)) throw new Error(PathReporter.report(result).join('\n'))
+  return result.right
 }
 
-type Relationships = Record<string, Relationship>
+const prepareView = (str: string) => {
+  let trimmed = str.replace(/\s{1,}/g, ' ').trim()
+  if (trimmed[trimmed.length - 1] !== ';') trimmed += ';'
+  return trimmed
+}
+
+const RelationshipConfig = t.type({
+  name: t.string,
+  mapping: t.array(Mapping),
+})
+
+const Relationships = t.record(t.string, RelationshipConfig)
+
+const EntityConfig = t.type({
+  relationships: Relationships,
+})
 
 export default processMetadata

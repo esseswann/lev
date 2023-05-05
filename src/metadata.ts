@@ -1,14 +1,9 @@
+import * as t from 'io-ts'
 import jsConvert from 'js-convert-case'
 
 export const convertCase = (str: string) => {
   const result = jsConvert.toCamelCase(str)
   return result
-}
-
-export const prepareView = (str: string) => {
-  let trimmed = str.replace(/\s{1,}/g, ' ').trim()
-  if (trimmed[trimmed.length - 1] !== ';') trimmed += ';'
-  return trimmed
 }
 
 export type Schema = Map<Key, Relationship>
@@ -17,16 +12,24 @@ type TablePath = string
 type ColumnName = string
 export type Key = `${TablePath}.${ColumnName}`
 
-export type Relationship = {
-  name: string
-  view: string
-  // cardinality: Cardinality
-  mapping: ColumnMapping[]
-}
+export const Mapping = t.type(
+  {
+    source: t.string,
+    target: t.string,
+  },
+  'Mapping'
+)
+export const Relationship = t.type(
+  {
+    name: t.string,
+    view: t.string,
+    mapping: t.array(Mapping),
+  },
+  'Relationship'
+)
 
-export type ColumnMapping = {
-  source: string
-  target: string
-}
+export type Relationship = t.TypeOf<typeof Relationship>
+
+export type Mapping = t.TypeOf<typeof Mapping>
 
 // type Cardinality = 'many' | 'one'
