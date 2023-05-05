@@ -17,6 +17,7 @@ async function processMetadata(directory: string): Promise<Schema> {
   const configsPath = path.join(directory, CONFIGS)
 
   for await (const { name, content } of iterateDirectory(viewsPath)) {
+    checkView(name, content) // FIXME
     const view = prepareView(content)
 
     schema.set(`${QUERY}.${name}`, {
@@ -61,6 +62,13 @@ const fromYaml = (input: string) => {
   const result = EntityConfig.decode(json)
   if (isLeft(result)) throw new Error(PathReporter.report(result).join('\n'))
   return result.right
+}
+
+const checkView = (name: string, str: string) => {
+  if (!str.includes(`$${name}`))
+    throw new Error(
+      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
+    )
 }
 
 const prepareView = (str: string) => {
