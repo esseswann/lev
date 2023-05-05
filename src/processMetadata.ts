@@ -69,7 +69,7 @@ const prepareView = (str: string) => {
   return trimmed
 }
 
-const RelationshipConfig = t.type({
+export const RelationshipConfig = t.type({
   name: t.string,
   mapping: t.array(Mapping),
 })

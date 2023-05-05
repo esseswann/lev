@@ -1,10 +1,5 @@
 import * as t from 'io-ts'
-import jsConvert from 'js-convert-case'
-
-export const convertCase = (str: string) => {
-  const result = jsConvert.toCamelCase(str)
-  return result
-}
+import { RelationshipConfig } from './processMetadata'
 
 export type Schema = Map<Key, Relationship>
 
@@ -19,12 +14,14 @@ export const Mapping = t.type(
   },
   'Mapping'
 )
-export const Relationship = t.type(
-  {
-    name: t.string,
-    view: t.string,
-    mapping: t.array(Mapping),
-  },
+
+export const Relationship = t.intersection(
+  [
+    RelationshipConfig,
+    t.type({
+      view: t.string,
+    }),
+  ],
   'Relationship'
 )
 
