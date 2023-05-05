@@ -23,7 +23,7 @@ async function processMetadata(directory: string): Promise<Schema> {
     schema.set(`${QUERY}.${name}`, {
       view,
       name,
-      mapping: [],
+      mapping: []
     })
   }
 
@@ -37,7 +37,7 @@ async function processMetadata(directory: string): Promise<Schema> {
 
       const relationshipConfig = {
         ...relationship,
-        view: target.view,
+        view: target.view
       }
 
       schema.set(`${name}.${key}`, relationshipConfig)
@@ -79,13 +79,13 @@ const prepareView = (str: string) => {
 
 export const RelationshipConfig = t.type({
   name: t.string,
-  mapping: t.array(Mapping),
+  mapping: t.array(Mapping)
 })
 
 const Relationships = t.record(t.string, RelationshipConfig)
 
 const EntityConfig = t.type({
-  relationships: Relationships,
+  relationships: Relationships
 })
 
 export default processMetadata

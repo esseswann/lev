@@ -14,8 +14,11 @@
     "build": "rm -rf lib && tsc"
   },
   "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
     "semi": false,
-    "singleQuote": true
+    "singleQuote": true,
+    "trailingComma": "none"
   },
   "devDependencies": {
     "node": "19.8.1",
