@@ -4,7 +4,7 @@ import { GetFromSchema, RelationshipConfig, getJoinExpressions } from '..'
 import { Relationship } from '../metadata'
 
 function* handleRelationship(
-  schema: GetFromSchema,
+  getFromSchema: GetFromSchema,
   parent: RelationshipConfig,
   field: ObjectFieldNode,
   relationship: Relationship,
@@ -23,7 +23,7 @@ function* handleRelationship(
     data: `left join $${relationship.name} as ${alias} on ${onExpressions}`
   }
   if (isObject(field.value))
-    yield* handler(schema, relationshipConfig, field.value)
+    yield* handler(getFromSchema, relationshipConfig, field.value)
 }
 
 export default handleRelationship

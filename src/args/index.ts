@@ -3,7 +3,7 @@ import { GetFromSchema, RelationshipConfig } from '..'
 import where from './where'
 
 const getArguments = (
-  schema: GetFromSchema,
+  getFromSchema: GetFromSchema,
   parent: RelationshipConfig,
   args: readonly ArgumentNode[]
 ) => {
@@ -17,7 +17,7 @@ const getArguments = (
       const value = arg.name.value
       const handler = handlers[value]
       if (!handler) throw new Error(`Unknown top level argument ${value}`)
-      for (const { kind, data } of handler(schema, parent, arg.value))
+      for (const { kind, data } of handler(getFromSchema, parent, arg.value))
         result[kind].add(data)
     }
   return result
@@ -37,7 +37,7 @@ export const isObject = (
 }
 
 export type Handler = (
-  schema: GetFromSchema,
+  getFromSchema: GetFromSchema,
   parent: RelationshipConfig,
   value: ObjectValueNode
 ) => Output
