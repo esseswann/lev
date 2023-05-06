@@ -109,7 +109,7 @@ const getSelections = (
         )
     }
   const cardinality = cardinalities[config.cardinality]
-  const selections = `${cardinality(result)}as ${DATA}`
+  const selections = `${cardinality(result)} as ${DATA}`
   return { selections, joins }
 }
 
