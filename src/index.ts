@@ -35,12 +35,12 @@ const convert = (schema: Schema, operation: OperationDefinitionNode) => {
 }
 
 const getSelect = (
-  schema: GetFromSchema,
+  getFromSchema: GetFromSchema,
   config: RelationshipConfig,
   selection: FieldNode
 ) => {
   let { selections, joins } = getSelections(
-    schema,
+    getFromSchema,
     config,
     selection.selectionSet!
   )
@@ -51,7 +51,7 @@ const getSelect = (
     groupBy = `group by ${joinColumns}`
   }
   const tail = [config.alias]
-  const args = getArguments(schema, config, selection.arguments!)
+  const args = getArguments(getFromSchema, config, selection.arguments!)
   tail.push(joins.concat([...args.joins]).join(' '))
   if (args.where.size) tail.push(`where ${[...args.where].join(' and ')}`)
   if (args.orderBy.size) tail.push(`order by ${[...args.orderBy].join(',')}`)
@@ -87,14 +87,13 @@ const handleRelationship = (
   const relationshipConfig = {
     ...config,
     alias: selection.name.value,
-    source: parent.alias,
-    joinColumns: ''
+    source: parent.alias
   }
   return handler(getFromSchema, relationshipConfig, selection)
 }
 
 const getSelections = (
-  schema: GetFromSchema,
+  getFromSchema: GetFromSchema,
   config: RelationshipConfig,
   selectionSet: SelectionSetNode
 ) => {
@@ -105,7 +104,7 @@ const getSelections = (
       result.push(getField(config.alias, selection))
       if (selection.selectionSet?.selections.length)
         joins.push(
-          handleRelationship(schema, config, selection, getRelationship)
+          handleRelationship(getFromSchema, config, selection, getRelationship)
         )
     }
   const cardinality = cardinalities[config.cardinality]
