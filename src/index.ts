@@ -3,8 +3,7 @@ import {
   Kind,
   ObjectFieldNode,
   OperationDefinitionNode,
-  SelectionNode,
-  SelectionSetNode
+  SelectionNode
 } from 'graphql'
 import getArguments from './args'
 import { Cardinality, Relationship, Schema } from './metadata'
@@ -17,7 +16,7 @@ const QUERY: RelationshipConfig = {
   mapping: [],
   view: '',
   source: 'query',
-  cardinality: 'many'
+  cardinality: 'one'
 }
 
 const convert = (schema: Schema, operation: OperationDefinitionNode) => {
@@ -27,12 +26,30 @@ const convert = (schema: Schema, operation: OperationDefinitionNode) => {
   if (operation.variableDefinitions)
     for (const variable of operation.variableDefinitions)
       expressions.push(getVariable(variable))
-  for (const selection of operation.selectionSet.selections)
-    if (isField(selection))
-      expressions.push(
-        handleRelationship(getFromSchema, QUERY, selection, getSelect)
-      )
-  return [...views.values(), ...expressions].join('\n')
+  const select = handleRoot(
+    getFromSchema,
+    QUERY,
+    operation.selectionSet.selections
+  )
+  return [...views.values(), select].join('\n')
+}
+
+const handleRoot = (
+  getFromSchema: GetFromSchema,
+  config: RelationshipConfig,
+  selections: readonly SelectionNode[]
+) => {
+  const selectionSet = getSelectionSet(config, selections).join(',')
+  let result = `select ${selectionSet} `
+  const joins = []
+  for (const field of selections)
+    if (isField(field)) {
+      const select = handleRelationship(getFromSchema, QUERY, field, getSelect)
+      const payload = `(${select}) as ${getAliasedName(field)}`
+      const prefix: string = joins.length ? 'cross join' : 'from'
+      joins.push(`${prefix} ${payload}`)
+    }
+  return result + joins.join('\n')
 }
 
 const getSelect = (
@@ -40,15 +57,13 @@ const getSelect = (
   config: RelationshipConfig,
   selection: FieldNode
 ) => {
-  let { selections, joins } = getSelections(
-    getFromSchema,
-    config,
-    selection.selectionSet!
-  )
+  const fields = selection.selectionSet!.selections
+  const selections = getSelectionSet(config, fields)
+  const joins = getJoins(getFromSchema, config, fields)
   const groupBy = []
   for (const link of config.mapping) {
     const name = `${config.name}.${link.target} as ${link.target}`
-    selections += `, ${name}`
+    selections.push(name)
     if (config.cardinality === 'many') groupBy.push(name)
   }
   const tail = [config.alias]
@@ -58,7 +73,9 @@ const getSelect = (
   if (args.orderBy.size) tail.push(`order by ${[...args.orderBy].join(',')}`)
   if (groupBy.length) tail.push(`group by ${groupBy.join(',')}`)
   const preparedTail = tail.join(' ')
-  return `select ${selections} from $${config.name} as ${preparedTail}`
+  return `select ${selections.join(',')} from $${
+    config.name
+  } as ${preparedTail}`
 }
 
 const getRelationship = (
@@ -93,24 +110,29 @@ const handleRelationship = (
   return handler(getFromSchema, relationshipConfig, selection)
 }
 
-const getSelections = (
+const getJoins = (
   getFromSchema: GetFromSchema,
   config: RelationshipConfig,
-  selectionSet: SelectionSetNode
+  selections: readonly SelectionNode[]
 ) => {
   const result: string[] = []
-  const joins: string[] = []
-  for (const selection of selectionSet.selections)
-    if (isField(selection)) {
-      result.push(getField(config.alias, selection))
-      if (selection.selectionSet?.selections.length)
-        joins.push(
-          handleRelationship(getFromSchema, config, selection, getRelationship)
-        )
-    }
+  for (const selection of selections)
+    if (isField(selection) && selection.selectionSet?.selections.length)
+      result.push(
+        handleRelationship(getFromSchema, config, selection, getRelationship)
+      )
+  return result
+}
+
+const getSelectionSet = (
+  config: RelationshipConfig,
+  selections: readonly SelectionNode[]
+) => {
+  const result = []
+  for (const selection of selections)
+    if (isField(selection)) result.push(getField(config.alias, selection))
   const cardinality = cardinalities[config.cardinality]
-  const selections = `${cardinality(result)} as ${DATA}`
-  return { selections, joins }
+  return [`${cardinality(result)} as ${DATA}`]
 }
 
 const cardinalities: Record<Cardinality, (result: string[]) => string> = {
@@ -118,16 +140,16 @@ const cardinalities: Record<Cardinality, (result: string[]) => string> = {
   many: (result) => `agg_list(${cardinalities.one(result)})`
 }
 
-const getField = (
-  correlationName: string,
-  { alias, name, selectionSet }: FieldNode
-) => {
-  const fieldAlias = alias?.value || name.value
-  const fieldName = selectionSet?.selections.length
-    ? `${name.value}.${DATA}`
-    : `${correlationName}.${name.value}`
-  return `${fieldAlias}:${fieldName}`
+const getField = (correlationName: string, field: FieldNode) => {
+  const name = field.name.value
+  const fieldName = field.selectionSet?.selections.length
+    ? `${name}.${DATA}`
+    : `${correlationName}.${name}`
+  return `${getAliasedName(field)}:${fieldName}`
 }
+
+const getAliasedName = (field: FieldNode) =>
+  field.alias?.value || field.name.value
 
 export const getJoinExpressions = ({
   alias,
