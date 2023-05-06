@@ -21,17 +21,18 @@ const QUERY: RelationshipConfig = {
 }
 
 const convert = (schema: Schema, operation: OperationDefinitionNode) => {
-  const expressions = new Set<string>()
-  const getFromSchema = getRelationshipHandler(schema, expressions)
+  const views = new Set<string>()
+  const expressions: string[] = []
+  const getFromSchema = getRelationshipHandler(schema, views)
   if (operation.variableDefinitions)
     for (const variable of operation.variableDefinitions)
-      expressions.add(getVariable(variable))
+      expressions.push(getVariable(variable))
   for (const selection of operation.selectionSet.selections)
     if (isField(selection))
-      expressions.add(
+      expressions.push(
         handleRelationship(getFromSchema, QUERY, selection, getSelect)
       )
-  return [...expressions.values()].join('\n')
+  return [...views.values(), ...expressions].join('\n')
 }
 
 const getSelect = (
