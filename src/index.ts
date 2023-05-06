@@ -44,18 +44,18 @@ const getSelect = (
     config,
     selection.selectionSet!
   )
-  let groupBy = ''
-  if (config.mapping.length) {
-    const joinColumns = config.mapping.map(({ target }) => target)
-    selections += `, ${joinColumns}`
-    groupBy = `group by ${joinColumns}`
+  const groupBy = []
+  for (const link of config.mapping) {
+    const name = `${config.name}.${link.target} as ${link.target}`
+    selections += `, ${name}`
+    if (config.cardinality === 'many') groupBy.push(name)
   }
   const tail = [config.alias]
   const args = getArguments(getFromSchema, config, selection.arguments!)
   tail.push(joins.concat([...args.joins]).join(' '))
   if (args.where.size) tail.push(`where ${[...args.where].join(' and ')}`)
   if (args.orderBy.size) tail.push(`order by ${[...args.orderBy].join(',')}`)
-  if (groupBy) tail.push(groupBy)
+  if (groupBy.length) tail.push(`group by ${groupBy.join(',')}`)
   const preparedTail = tail.join(' ')
   return `select ${selections} from $${config.name} as ${preparedTail}`
 }
