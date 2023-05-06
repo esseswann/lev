@@ -79,7 +79,7 @@ const handleRelationship = (
   ) => string
 ): string => {
   const config = getFromSchema(parent, selection)
-  if (!config) throw new Error(`No ${selection.name} in ${parent.alias}`)
+  if (!config) throw new Error(`No ${selection.name.value} in ${parent.alias}`)
   const relationshipConfig = {
     ...config,
     alias: selection.name.value,
