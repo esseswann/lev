@@ -22,6 +22,7 @@ async function processMetadata(directory: string): Promise<Schema> {
     schema.set(`${QUERY}.${name}`, {
       view,
       name,
+      cardinality: 'many',
       mapping: []
     })
   }

@@ -1,12 +1,12 @@
 import { ObjectFieldNode, ObjectValueNode } from 'graphql'
 import { Output, isObject } from '..'
-import { EntityConfig, GetFromSchema } from '../..'
+import { GetFromSchema, RelationshipConfig } from '../..'
 import handleRelationship from '../handleRelationship'
 import operators from './operators'
 
 function* where(
   schema: GetFromSchema,
-  parent: EntityConfig,
+  parent: RelationshipConfig,
   value: ObjectValueNode
 ): Output {
   for (const field of value.fields) {
@@ -18,7 +18,7 @@ function* where(
 }
 
 function* handleWhereField(
-  parent: EntityConfig,
+  parent: RelationshipConfig,
   field: ObjectFieldNode
 ): Output {
   if (isObject(field.value))
@@ -28,12 +28,12 @@ function* handleWhereField(
       const left = getLeft(parent, field)
       yield {
         kind: 'where',
-        data: handler(left, predicate),
+        data: handler(left, predicate)
       }
     }
 }
 
-const getLeft = (parent: EntityConfig, field: ObjectFieldNode) =>
+const getLeft = (parent: RelationshipConfig, field: ObjectFieldNode) =>
   `${parent.alias}.${field.name.value}`
 
 export default where

@@ -1,12 +1,12 @@
 import { Kind, ObjectFieldNode, ObjectValueNode } from 'graphql'
 import { Output } from '.'
-import { EntityConfig, GetFromSchema } from '..'
+import { GetFromSchema, RelationshipConfig } from '..'
 import handleRelationship from './handleRelationship'
 
 // FIXME does not properly work because of agg_list
 function* orderBy(
   schema: GetFromSchema,
-  parent: EntityConfig,
+  parent: RelationshipConfig,
   value: ObjectValueNode
 ): Output {
   for (const field of value.fields) {
@@ -18,7 +18,7 @@ function* orderBy(
 }
 
 function* handleOrderByField(
-  parent: EntityConfig,
+  parent: RelationshipConfig,
   field: ObjectFieldNode
 ): Output {
   const name = parent.alias
@@ -28,13 +28,13 @@ function* handleOrderByField(
   if (!value) throw new Error(`Unknown order by variant ${field.value.value}`)
   yield {
     kind: 'orderBy',
-    data: `${name}.${field.name.value} ${value}`,
+    data: `${name}.${field.name.value} ${value}`
   }
 }
 
 const variants: Record<string, string> = {
   ASC: 'asc',
-  DESC: 'desc',
+  DESC: 'desc'
 }
 
 export default orderBy

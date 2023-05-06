@@ -1,16 +1,16 @@
 import { ArgumentNode, Kind, ObjectValueNode, ValueNode } from 'graphql'
-import { EntityConfig, GetFromSchema } from '..'
+import { GetFromSchema, RelationshipConfig } from '..'
 import where from './where'
 
 const getArguments = (
   schema: GetFromSchema,
-  parent: EntityConfig,
+  parent: RelationshipConfig,
   args: readonly ArgumentNode[]
 ) => {
   const result: Result = {
     joins: new Set(),
     where: new Set(),
-    orderBy: new Set(),
+    orderBy: new Set()
   }
   for (const arg of args)
     if (isObject(arg.value)) {
@@ -24,7 +24,7 @@ const getArguments = (
 }
 
 const handlers: Record<string, Handler> = {
-  where,
+  where
   // orderBy,
 }
 
@@ -38,7 +38,7 @@ export const isObject = (
 
 export type Handler = (
   schema: GetFromSchema,
-  parent: EntityConfig,
+  parent: RelationshipConfig,
   value: ObjectValueNode
 ) => Output
 

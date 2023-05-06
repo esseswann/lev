@@ -13,9 +13,12 @@ export const Mapping = t.type(
   },
   'Mapping'
 )
+const Cardinality = t.union([t.literal('one'), t.literal('many')])
+export type Cardinality = t.TypeOf<typeof Cardinality>
 
 const RelationshipConfig = t.type({
   name: t.string,
+  cardinality: Cardinality,
   mapping: t.array(Mapping)
 })
 

@@ -7,11 +7,18 @@ import {
   SelectionSetNode
 } from 'graphql'
 import getArguments from './args'
-import { Relationship, Schema } from './metadata'
+import { Cardinality, Relationship, Schema } from './metadata'
 import getVariable from './variables'
 
-const ROWS = 'rows'
-const QUERY = { name: 'query', alias: 'query', joinColumns: '' }
+const DATA = 'data'
+const QUERY: RelationshipConfig = {
+  name: 'query',
+  alias: 'query',
+  mapping: [],
+  view: '',
+  source: 'query',
+  cardinality: 'many'
+}
 
 const convert = (schema: Schema, operation: OperationDefinitionNode) => {
   const expressions = new Set<string>()
@@ -29,7 +36,7 @@ const convert = (schema: Schema, operation: OperationDefinitionNode) => {
 
 const getSelect = (
   schema: GetFromSchema,
-  config: EntityConfig,
+  config: RelationshipConfig,
   selection: FieldNode
 ) => {
   let { selections, joins } = getSelections(
@@ -38,9 +45,10 @@ const getSelect = (
     selection.selectionSet!
   )
   let groupBy = ''
-  if (config.joinColumns) {
-    selections += `, ${config.joinColumns}`
-    groupBy = `group by ${config.joinColumns}`
+  if (config.mapping.length) {
+    const joinColumns = config.mapping.map(({ target }) => target)
+    selections += `, ${joinColumns}`
+    groupBy = `group by ${joinColumns}`
   }
   const tail = [config.alias]
   const args = getArguments(schema, config, selection.arguments!)
@@ -57,24 +65,20 @@ const getRelationship = (
   relationship: RelationshipConfig,
   selection: FieldNode
 ) => {
-  const { joinColumns, onExpressions } = getJoinExpressions(relationship)
-  const entityConfig = {
-    alias: selection.name.value,
-    name: relationship.name,
-    joinColumns
-  }
-  const select = getSelect(schema, entityConfig, selection)
+  const onExpressions = getJoinExpressions(relationship)
+  relationship.alias = selection.name.value
+  const select = getSelect(schema, relationship, selection)
   return `left join (${select}) as ${relationship.alias} on ${onExpressions}`
   // FIXME when agg_list is empty so it does not return empty array
 }
 
 const handleRelationship = (
   getFromSchema: GetFromSchema,
-  parent: EntityConfig,
+  parent: RelationshipConfig,
   selection: FieldNode,
   handler: (
     schema: GetFromSchema,
-    relationship: RelationshipConfig & EntityConfig,
+    relationship: RelationshipConfig & RelationshipConfig,
     selection: FieldNode
   ) => string
 ): string => {
@@ -91,7 +95,7 @@ const handleRelationship = (
 
 const getSelections = (
   schema: GetFromSchema,
-  config: EntityConfig,
+  config: RelationshipConfig,
   selectionSet: SelectionSetNode
 ) => {
   const result: string[] = []
@@ -104,10 +108,14 @@ const getSelections = (
           handleRelationship(schema, config, selection, getRelationship)
         )
     }
-  return {
-    selections: `agg_list(<|${result.join(',')}|>) as ${ROWS}`,
-    joins
-  }
+  const cardinality = cardinalities[config.cardinality]
+  const selections = `${cardinality(result)}as ${DATA}`
+  return { selections, joins }
+}
+
+const cardinalities: Record<Cardinality, (result: string[]) => string> = {
+  one: (result) => `<|${result.join(',')}|>`,
+  many: (result) => `agg_list(${cardinalities.one(result)})`
 }
 
 const getField = (
@@ -116,7 +124,7 @@ const getField = (
 ) => {
   const fieldAlias = alias?.value || name.value
   const fieldName = selectionSet?.selections.length
-    ? `${name.value}.${ROWS}`
+    ? `${name.value}.${DATA}`
     : `${correlationName}.${name.value}`
   return `${fieldAlias}:${fieldName}`
 }
@@ -124,19 +132,11 @@ const getField = (
 export const getJoinExpressions = ({
   alias,
   source,
-  mapping: columnMapping
-}: RelationshipConfig) => {
-  const joinColumns: string[] = []
-  const predicates: string[] = []
-  for (const mapping of columnMapping) {
-    joinColumns.push(mapping.target)
-    predicates.push(`${source}.${mapping.source} = ${alias}.${mapping.target}`)
-  }
-  return {
-    joinColumns: joinColumns.join(','),
-    onExpressions: predicates.join(' and ')
-  }
-}
+  mapping
+}: RelationshipConfig) =>
+  mapping
+    .map((link) => `${source}.${link.source} = ${alias}.${link.target}`)
+    .join(' and ')
 
 const isField = (selection: SelectionNode): selection is FieldNode => {
   const test = selection.kind === Kind.FIELD
@@ -152,16 +152,13 @@ const getRelationshipHandler =
     return config
   }
 
-export type EntityConfig = {
-  name: string
+export type RelationshipConfig = Relationship & {
   alias: string
-  joinColumns: string
+  source: string
 }
 
-type RelationshipConfig = Relationship & { alias: string; source: string }
-
 export type GetFromSchema = (
-  parent: Pick<EntityConfig, 'name'>,
+  parent: Pick<RelationshipConfig, 'name'>,
   field: ObjectFieldNode | FieldNode
 ) => Relationship | undefined
 
