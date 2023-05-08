@@ -124,7 +124,7 @@ const getJoins = (
   return result
 }
 
-const getSelectionSet = (
+export const getSelectionSet = (
   config: RelationshipConfig,
   selections: readonly SelectionNode[]
 ) => {
@@ -160,13 +160,13 @@ export const getJoinExpressions = ({
     .map((link) => `${source}.${link.source} = ${alias}.${link.target}`)
     .join(' and ')
 
-const isField = (selection: SelectionNode): selection is FieldNode => {
+export const isField = (selection: SelectionNode): selection is FieldNode => {
   const test = selection.kind === Kind.FIELD
   if (!test) throw new Error('Only Fields are supported')
   return test
 }
 
-const getRelationshipHandler =
+export const getRelationshipHandler =
   (schema: Schema, views: Set<string>): GetFromSchema =>
   (parent, field) => {
     const config = schema.get(`${parent.name}.${field.name.value}`)
