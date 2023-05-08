@@ -59,9 +59,11 @@ const getSelect = (
   // ]
   const targets = config.mapping.map(({ target }) => target)
   const selectionSet = struct.concat(targets).join(', ')
-  const tail = [`$${config.name} as ${config.alias}`]
-  if (targets.length) tail.push(`group by ${targets.join(',')}`)
-  return `select ${selectionSet} from ${tail.join(' ')}`
+  const select = `select ${selectionSet}`
+  const from = `from $${config.name} as ${config.alias}`
+  const result = [select, from]
+  if (targets.length) result.push(`group by ${targets.join(',')}`)
+  return result.join(' ')
 }
 
 const getStructField = (result: string[], field: FieldNode) =>
