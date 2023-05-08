@@ -12,7 +12,8 @@ const getView = (schema: Schema, operation: OperationDefinitionNode) => {
   const fields = operation.selectionSet.selections.filter(isField)
   const views = new Set<string>()
   const getFromSchema = getRelationshipHandler(schema, views)
-  return handleRelationships(getFromSchema, { name: 'query' }, fields)
+  const selects = handleRelationships(getFromSchema, { name: 'query' }, fields)
+  return [...views].concat(selects).join('\n')
 }
 
 const handleRelationships = (
@@ -22,24 +23,30 @@ const handleRelationships = (
 ) => {
   const views = []
   for (const selection of fields)
-    if (selection.selectionSet) {
-      const selections = selection.selectionSet.selections.filter(isField)
-      const relationship = getFromSchema(parentConfig, selection)
-      if (!relationship)
-        throw new Error(`No ${selection.name.value} in ${parent}`)
-      const select = getSelect(relationship, selections)
-      const { joins, where, orderBy } = getArguments(
-        getFromSchema,
-        relationship,
-        selection.arguments!
-      )
-      const result = [select]
-        .concat([...joins].join(' and '))
-        .concat(where.size ? `where ${[...where].join(' and ')}` : [])
-        .concat([...orderBy].join(','))
-      views.push(result.join(' '))
-    }
+    if (selection.selectionSet)
+      views.push(getRelationship(getFromSchema, parentConfig, selection))
   return views
+}
+
+const getRelationship = (
+  getFromSchema: GetFromSchema,
+  parentConfig: Pick<RelationshipConfig, 'name'>,
+  selection: FieldNode
+) => {
+  const selections = selection.selectionSet!.selections.filter(isField)
+  const relationship = getFromSchema(parentConfig, selection)
+  if (!relationship) throw new Error(`No ${selection.name.value} in ${parent}`)
+  const select = getSelect(relationship, selections)
+  const { joins, where, orderBy } = getArguments(
+    getFromSchema,
+    relationship,
+    selection.arguments!
+  )
+  const result = [select]
+    .concat([...joins].join(' and '))
+    .concat(where.size ? `where ${[...where].join(' and ')}` : [])
+    .concat([...orderBy].join(','))
+  return result.join(' ').concat(';')
 }
 
 const getSelect = (
