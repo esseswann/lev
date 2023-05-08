@@ -1,4 +1,4 @@
-import { FieldNode, OperationDefinitionNode } from 'graphql'
+import { FieldNode, SelectionSetNode } from 'graphql'
 import {
   GetFromSchema,
   RelationshipConfig,
@@ -8,11 +8,15 @@ import {
 import getArguments from './args'
 import { Schema } from './metadata'
 
-const getView = (schema: Schema, operation: OperationDefinitionNode) => {
-  const fields = operation.selectionSet.selections.filter(isField)
+const getView = (
+  schema: Schema,
+  parentConfig: Pick<RelationshipConfig, 'name'>,
+  selectionSet: SelectionSetNode
+) => {
+  const fields = selectionSet.selections.filter(isField)
   const views = new Set<string>()
   const getFromSchema = getRelationshipHandler(schema, views)
-  const selects = handleRelationships(getFromSchema, { name: 'query' }, fields)
+  const selects = handleRelationships(getFromSchema, parentConfig, fields)
   return [...views].concat(selects).join('\n')
 }
 
@@ -35,7 +39,8 @@ const getRelationship = (
 ) => {
   const selections = selection.selectionSet!.selections.filter(isField)
   const relationship = getFromSchema(parentConfig, selection)
-  if (!relationship) throw new Error(`No ${selection.name.value} in ${parent}`)
+  if (!relationship)
+    throw new Error(`No ${selection.name.value} in ${parentConfig.name}`)
   const select = getSelect(relationship, selections)
   const { joins, where, orderBy } = getArguments(
     getFromSchema,
