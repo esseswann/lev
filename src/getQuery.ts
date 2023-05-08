@@ -58,10 +58,12 @@ const getSelect = (
   config: RelationshipConfig,
   selections: readonly FieldNode[]
 ) => {
-  const struct = [`${config.alias}.*`]
-  // [
-  //   `agg_list(<|${selections.reduce(getStructField, [])}|>) as data`
-  // ]
+  const struct = [
+    `agg_list(<|${selections.reduce(
+      getStructField(config.alias),
+      []
+    )}|>) as data`
+  ]
   const targets = config.mapping.map(({ target }) => target)
   const selectionSet = struct.concat(targets).join(', ')
   const select = `select ${selectionSet}`
@@ -71,9 +73,10 @@ const getSelect = (
   return result.join(' ')
 }
 
-const getStructField = (result: string[], field: FieldNode) =>
-  field.selectionSet
-    ? result
-    : result.concat(`${field.name.value}:${field.name.value}`)
+const getStructField =
+  (alias: string) => (result: string[], field: FieldNode) =>
+    field.selectionSet
+      ? result
+      : result.concat(`${field.name.value}:${alias}.${field.name.value}`)
 
 export default getQuery

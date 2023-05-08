@@ -33,7 +33,7 @@ async function processMetadata(directory: string): Promise<Schema> {
     for (const [key, relationship] of Object.entries(config.relationships)) {
       const target = schema.get(`${QUERY}.${relationship.name}`)
 
-      if (!target) throw new Error(`No view present for ${name}`)
+      if (!target) throw new Error(`No view present for ${relationship.name}`)
 
       const relationshipConfig = {
         ...relationship,
@@ -65,7 +65,7 @@ const fromYaml = (input: string) => {
 }
 
 const checkView = (name: string, str: string) => {
-  if (!str.includes(`$${name}`))
+  if (!str.includes(`$${name} `))
     throw new Error(
       `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
     )

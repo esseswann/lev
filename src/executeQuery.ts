@@ -1,6 +1,5 @@
 import { OperationDefinitionNode, SelectionSetNode } from 'graphql'
-import type { Driver } from 'ydb-sdk'
-import { TypedData } from 'ydb-sdk'
+import { Driver, TypedData, Ydb } from 'ydb-sdk'
 import { RelationshipConfig, getAliasedName, isField } from '.'
 import getQuery from './getQuery'
 import { Schema } from './metadata'
@@ -10,47 +9,52 @@ const executeQuery = async (
   driver: Driver,
   operation: OperationDefinitionNode,
   prepend: string
-) => {
-  const selectionSet = operation.selectionSet
-  const query = getQuery(schema, { name: 'query' }, selectionSet)
-  const result = handleEntity(
+) =>
+  handleEntity(
     schema,
     driver,
     { name: 'query' },
-    [{}],
-    selectionSet,
+    Ydb.ResultSet.create({ rows: [{}] }),
+    operation.selectionSet,
     prepend
   )
-  return result
-}
 
 const handleEntity = async (
   schema: Schema,
   driver: Driver,
   parentConfig: Pick<RelationshipConfig, 'name'>,
-  parentData: any[],
+  parentData: Ydb.IResultSet, // FIXME
   selectionSet: SelectionSetNode,
   prepend: string
 ) => {
+  let relationships: Relationships = {}
   const query = getQuery(schema, parentConfig, selectionSet)
-  const preparedQuery = `${prepend}\n${query}`
-  const relationships = await getRelationships(
-    driver,
-    selectionSet,
-    preparedQuery
-  )
+  if (query) {
+    const preparedQuery = `${prepend}\n${query}`
+    relationships = await getRelationships(driver, selectionSet, preparedQuery)
+  }
   const result = []
-  for (const parentDataItem of parentData) {
+  const typedData = TypedData.createNativeObjects(parentData)
+  for (const parentDataItem of typedData) {
     const item: Record<string, any> = {}
     for (const field of selectionSet.selections)
       if (isField(field)) {
         const key = getAliasedName(field)
-        if (!field.selectionSet)
-          item[key] = parentDataItem.getValue(field.name.value)
-        else {
+        if (!field.selectionSet) {
+          item[key] = (parentDataItem as any)[field.name.value]
+        } else {
           const config = schema.get(`${parentConfig.name}.${field.name.value}`)
-          if (!config) throw new Error('kek')
-          item[key] = relationships[field.name.value]
+          if (!config) throw new Error('No config')
+          const data = relationships[field.name.value]
+          const relationship = await handleEntity(
+            schema,
+            driver,
+            config,
+            data,
+            field.selectionSet,
+            prepend
+          )
+          item[key] = relationship
         }
       }
     result.push(item)
@@ -64,22 +68,29 @@ const getRelationships = async (
   query: string
 ) => {
   const data = await getData(driver, query)
-  const result: Record<string, TypedData[]> = {}
+  const relationships = selectionSet.selections
+    .filter(isField)
+    .filter(({ selectionSet }) => !!selectionSet)
+  const result: Relationships = {}
   for (const index in data) {
-    const field = selectionSet.selections[index]
-    if (isField(field))
-      result[field.alias?.value || field.name.value] = data[index]
+    const field = relationships[index]
+    result[field.alias?.value || field.name.value] = data[index]
   }
   return result
 }
 
 const getData = async (driver: Driver, query: string) => {
-  const results = await driver.tableClient.withSessionRetry((session) =>
-    session.executeQuery(query)
-  )
-  return results.resultSets.map((resultSet) =>
-    TypedData.createNativeObjects(resultSet)
-  )
+  try {
+    const results = await driver.tableClient.withSessionRetry((session) =>
+      session.executeQuery(query)
+    )
+    return results.resultSets
+  } catch (error) {
+    console.log(query)
+    throw error
+  }
 }
+
+type Relationships = Record<string, Ydb.IResultSet>
 
 export default executeQuery
