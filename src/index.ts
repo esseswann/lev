@@ -148,7 +148,7 @@ const getField = (correlationName: string, field: FieldNode) => {
   return `${getAliasedName(field)}:${fieldName}`
 }
 
-const getAliasedName = (field: FieldNode) =>
+export const getAliasedName = (field: FieldNode) =>
   field.alias?.value || field.name.value
 
 export const getJoinExpressions = ({

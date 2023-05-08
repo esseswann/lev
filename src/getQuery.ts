@@ -8,7 +8,7 @@ import {
 import getArguments from './args'
 import { Schema } from './metadata'
 
-const getView = (
+const getQuery = (
   schema: Schema,
   parentConfig: Pick<RelationshipConfig, 'name'>,
   selectionSet: SelectionSetNode
@@ -76,4 +76,4 @@ const getStructField = (result: string[], field: FieldNode) =>
     ? result
     : result.concat(`${field.name.value}:${field.name.value}`)
 
-export default getView
+export default getQuery
