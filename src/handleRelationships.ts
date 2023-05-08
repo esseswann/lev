@@ -43,9 +43,9 @@ const getRelationship = (
     selection.arguments!
   )
   const result = [select]
-    .concat([...joins].join(' and '))
-    .concat(where.size ? `where ${[...where].join(' and ')}` : [])
-    .concat([...orderBy].join(','))
+  if (joins.size) result.push([...joins].join(' and '))
+  if (where.size) result.push(`where ${[...where].join(' and ')}`)
+  if (orderBy.size) result.push([...orderBy].join(','))
   return result.join(' ').concat(';')
 }
 
