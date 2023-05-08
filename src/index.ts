@@ -170,8 +170,15 @@ export const getRelationshipHandler =
   (schema: Schema, views: Set<string>): GetFromSchema =>
   (parent, field) => {
     const config = schema.get(`${parent.name}.${field.name.value}`)
-    if (config?.view) views.add(config.view)
-    return config
+    if (config) {
+      if (config.view) views.add(config.view)
+      return {
+        ...config,
+        alias: field.name.value,
+        source: parent.name
+      }
+    }
+    return undefined
   }
 
 export type RelationshipConfig = Relationship & {
@@ -182,6 +189,6 @@ export type RelationshipConfig = Relationship & {
 export type GetFromSchema = (
   parent: Pick<RelationshipConfig, 'name'>,
   field: ObjectFieldNode | FieldNode
-) => Relationship | undefined
+) => RelationshipConfig | undefined
 
 export default convert

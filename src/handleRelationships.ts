@@ -27,20 +27,15 @@ const handleRelationships = (
       const relationship = getFromSchema(parentConfig, selection)
       if (!relationship)
         throw new Error(`No ${selection.name.value} in ${parent}`)
-      const config = {
-        ...relationship,
-        alias: selection.name.value,
-        source: parentConfig.name
-      }
-      const select = getSelect(config, selections)
+      const select = getSelect(relationship, selections)
       const { joins, where, orderBy } = getArguments(
         getFromSchema,
-        config,
+        relationship,
         selection.arguments!
       )
       const result = [select]
         .concat([...joins].join(' and '))
-        .concat([...where].join(' and '))
+        .concat(where.size ? `where ${[...where].join(' and ')}` : [])
         .concat([...orderBy].join(','))
       views.push(result.join(' '))
     }
@@ -51,9 +46,10 @@ const getSelect = (
   config: RelationshipConfig,
   selections: readonly FieldNode[]
 ) => {
-  const struct = [
-    `agg_list(<|${selections.reduce(getStructField, [])}|>) as data`
-  ]
+  const struct = [`${config.alias}.*`]
+  // [
+  //   `agg_list(<|${selections.reduce(getStructField, [])}|>) as data`
+  // ]
   const targets = config.mapping.map(({ target }) => target)
   const selectionSet = struct.concat(targets).join(', ')
   const tail = [`$${config.name} as ${config.alias}`]
