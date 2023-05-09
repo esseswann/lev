@@ -1,59 +1,73 @@
-import { FieldNode, SelectionSetNode } from 'graphql'
+import { ArgumentNode, FieldNode, SelectionSetNode } from 'graphql'
 import {
   GetFromSchema,
   RelationshipConfig,
+  getAliasedName,
   getRelationshipHandler,
   isField
 } from '.'
 import getArguments from './args'
 import { Schema } from './metadata'
 
-const getQuery = (
-  schema: Schema,
-  parentConfig: Pick<RelationshipConfig, 'name'>,
-  selectionSet: SelectionSetNode
-) => {
+const getQuery = (schema: Schema, selectionSet: SelectionSetNode) => {
   const fields = selectionSet.selections.filter(isField)
   const views = new Set<string>()
   const getFromSchema = getRelationshipHandler(schema, views)
-  const selects = handleRelationships(getFromSchema, parentConfig, fields)
-  return [...views].concat(selects).join('\n')
+  const expressions: string[] = []
+  const selects: string[] = []
+  for (const field of fields) {
+    const config = {
+      query: '$query',
+      name: 'query'
+    }
+    const { name, expression } = handleEntity(getFromSchema, config, field)
+    expressions.push(expression)
+    selects.push(`select * from ${name};`)
+  }
+  return [...views].concat(expressions).concat(selects).join('\n')
 }
 
-const handleRelationships = (
+const TABLE = 't'
+const PARENT = 'p'
+
+const handleEntity = (
   getFromSchema: GetFromSchema,
-  parentConfig: Pick<RelationshipConfig, 'name'>,
-  fields: FieldNode[]
+  parent: { query: string; name: string },
+  field: FieldNode
 ) => {
-  const views = []
-  for (const selection of fields)
-    if (selection.selectionSet)
-      views.push(getRelationship(getFromSchema, parentConfig, selection))
-  return views
+  const config = getFromSchema(parent, field)
+  if (!config) throw new Error('')
+  const name = `${parent.query}_${getAliasedName(field)}`
+  const select = `select ${TABLE}.*`
+  const from = `from $${config.name} ${TABLE}`
+  const result = [name, '=', select, from]
+  if (config.mapping.length) {
+    result.push(`join ${config.name} ${PARENT}`)
+    for (const { source, target } of config.mapping)
+      result.push(`${PARENT}.${source} = ${TABLE}.${target}`)
+  }
+  if (field.arguments?.length)
+    result.push(handleArguments(getFromSchema, config, field.arguments))
+  const expression = result.join(' ') + ';'
+  return { name, expression }
 }
 
-const getRelationship = (
+const handleArguments = (
   getFromSchema: GetFromSchema,
-  parentConfig: Pick<RelationshipConfig, 'name'>,
-  selection: FieldNode
+  config: RelationshipConfig,
+  args: readonly ArgumentNode[]
 ) => {
-  const relationship = getFromSchema(parentConfig, selection)
-  if (!relationship)
-    throw new Error(`No ${selection.name.value} in ${parentConfig.name}`)
-  const select = getSelect(relationship)
-  const { joins, where, orderBy } = getArguments(
-    getFromSchema,
-    relationship,
-    selection.arguments!
-  )
-  const result = [select]
-  if (joins.size) result.push([...joins].join(' and '))
-  if (where.size) result.push(`where ${[...where].join(' and ')}`)
-  if (orderBy.size) result.push([...orderBy].join(','))
-  return result.join(' ').concat(';')
+  const result = []
+  config.alias = TABLE // FIXME
+  const output = getArguments(getFromSchema, config, args)
+  for (const join of output.joins) result.push(join)
+  if (output.where.size) result.push(appendWith('where', ' and ', output.where))
+  if (output.orderBy.size)
+    result.push(appendWith('order by', ',', output.orderBy))
+  return result.join(' ')
 }
 
-const getSelect = (config: RelationshipConfig) =>
-  `select ${config.alias}.* from $${config.name} as ${config.alias}`
+const appendWith = (prefix: string, separator: string, set: Set<string>) =>
+  `${prefix} ${[...set.values()].join(separator)}`
 
 export default getQuery
