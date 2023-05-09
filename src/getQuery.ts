@@ -25,15 +25,16 @@ const getQuery = (schema: Schema, selectionSet: SelectionSetNode) => {
     name: 'query'
   }
   const entities = handleEntities(getFromSchema, config, fields)
-  for (const { expression, binding } of entities) {
-    expressions.push(expression)
-    selects.push(`select * from ${binding};`)
+  for (const output of entities) {
+    expressions.push(output.expression)
+    selects.push(getSelect(output))
   }
   return [...views].concat(expressions).concat(selects).join('\n')
 }
 
 const TABLE = 't'
 const PARENT = 'p'
+const KEY = 'key'
 
 function* handleEntities(
   getFromSchema: GetFromSchema,
@@ -63,22 +64,61 @@ const handleEntity = (
       `No config present for ${field.name.value} in ${parent.name}`
     )
   const binding = `${parent.binding}_${getAliasedName(field)}`
-  const select = `select ${TABLE}.* from $${config.name} ${TABLE}`
-  const result = [binding, '=', select]
+  const select = `select ${TABLE}.*`
+  const from = `from $${config.name} ${TABLE}`
+  const result = [binding, '=', select, from]
+  const key: string[] = []
   if (config.mapping.length) {
     result.push(`join ${parent.binding} ${PARENT} on`)
     const expressions = []
-    for (const { source, target } of config.mapping)
+    for (const { source, target } of config.mapping) {
       expressions.push(`${PARENT}.${source} = ${TABLE}.${target}`)
+      key.push(target)
+    }
     result.push(expressions.join(' and '))
   }
   if (field.arguments?.length)
     result.push(handleArguments(getFromSchema, config, field.arguments))
   const expression = result.join(' ') + ';'
-  return { binding, name: config.name, expression }
+  return {
+    key,
+    binding,
+    expression,
+    name: config.name,
+    selections: field.selectionSet!.selections
+  }
 }
 
-type Output = { binding: string; name: string; expression: string }
+type Output = {
+  key: string[]
+  binding: string
+  name: string
+  expression: string
+  selections: readonly SelectionNode[]
+}
+
+const getSelect = ({ binding, selections, key }: Output) => {
+  const config = {
+    data: getFields(selections),
+    key: getKey(key)
+  }
+  const fields = Object.entries(config).map(handleField).join(', ')
+  return `select ${fields} from ${binding};`
+}
+
+const getFields = (fields: readonly SelectionNode[]) => {
+  const result = []
+  for (const field of fields)
+    if (isField(field) && !field.selectionSet)
+      result.push(`${getAliasedName(field)}:${field.name.value}`)
+  return `<|${result.join(',')}|>`
+}
+
+const getKey = (key: string[]) =>
+  `Yson::GetHash(Yson::From((${key.join(',')})))`
+
+const handleField = ([key, value]: [string, string]) => `${value} as ${key}`
+
 type Parent = { binding: string; name: string }
 
 const handleArguments = (
