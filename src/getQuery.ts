@@ -66,7 +66,7 @@ const handleEntity = (
   const select = `select ${TABLE}.* from $${config.name} ${TABLE}`
   const result = [binding, '=', select]
   if (config.mapping.length) {
-    result.push(`join $${parent.name} ${PARENT} on`)
+    result.push(`join ${parent.binding} ${PARENT} on`)
     const expressions = []
     for (const { source, target } of config.mapping)
       expressions.push(`${PARENT}.${source} = ${TABLE}.${target}`)
