@@ -37,11 +37,10 @@ const getRelationship = (
   parentConfig: Pick<RelationshipConfig, 'name'>,
   selection: FieldNode
 ) => {
-  const selections = selection.selectionSet!.selections.filter(isField)
   const relationship = getFromSchema(parentConfig, selection)
   if (!relationship)
     throw new Error(`No ${selection.name.value} in ${parentConfig.name}`)
-  const select = getSelect(relationship, selections)
+  const select = getSelect(relationship)
   const { joins, where, orderBy } = getArguments(
     getFromSchema,
     relationship,
@@ -54,29 +53,7 @@ const getRelationship = (
   return result.join(' ').concat(';')
 }
 
-const getSelect = (
-  config: RelationshipConfig,
-  selections: readonly FieldNode[]
-) => {
-  const struct = [
-    `agg_list(<|${selections.reduce(
-      getStructField(config.alias),
-      []
-    )}|>) as data`
-  ]
-  const targets = config.mapping.map(({ target }) => target)
-  const selectionSet = struct.concat(targets).join(', ')
-  const select = `select ${selectionSet}`
-  const from = `from $${config.name} as ${config.alias}`
-  const result = [select, from]
-  if (targets.length) result.push(`group by ${targets.join(',')}`)
-  return result.join(' ')
-}
-
-const getStructField =
-  (alias: string) => (result: string[], field: FieldNode) =>
-    field.selectionSet
-      ? result
-      : result.concat(`${field.name.value}:${alias}.${field.name.value}`)
+const getSelect = (config: RelationshipConfig) =>
+  `select ${config.alias}.* from $${config.name} as ${config.alias}`
 
 export default getQuery
