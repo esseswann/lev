@@ -1,4 +1,9 @@
-import { ArgumentNode, FieldNode, SelectionSetNode } from 'graphql'
+import {
+  ArgumentNode,
+  FieldNode,
+  SelectionNode,
+  SelectionSetNode
+} from 'graphql'
 import {
   GetFromSchema,
   RelationshipConfig,
@@ -15,14 +20,14 @@ const getQuery = (schema: Schema, selectionSet: SelectionSetNode) => {
   const getFromSchema = getRelationshipHandler(schema, views)
   const expressions: string[] = []
   const selects: string[] = []
-  for (const field of fields) {
-    const config = {
-      query: '$query',
-      name: 'query'
-    }
-    const { name, expression } = handleEntity(getFromSchema, config, field)
+  const config = {
+    binding: '$query',
+    name: 'query'
+  }
+  const entities = handleEntities(getFromSchema, config, fields)
+  for (const { expression, binding } of entities) {
     expressions.push(expression)
-    selects.push(`select * from ${name};`)
+    selects.push(`select * from ${binding};`)
   }
   return [...views].concat(expressions).concat(selects).join('\n')
 }
@@ -30,27 +35,51 @@ const getQuery = (schema: Schema, selectionSet: SelectionSetNode) => {
 const TABLE = 't'
 const PARENT = 'p'
 
+function* handleEntities(
+  getFromSchema: GetFromSchema,
+  parent: Parent,
+  fields: readonly SelectionNode[]
+): Generator<Output> {
+  for (const field of fields) {
+    if (isField(field)) {
+      const selections = field.selectionSet?.selections
+      if (selections?.length) {
+        const result = handleEntity(getFromSchema, parent, field)
+        yield result
+        yield* handleEntities(getFromSchema, result, selections)
+      }
+    }
+  }
+}
+
 const handleEntity = (
   getFromSchema: GetFromSchema,
-  parent: { query: string; name: string },
+  parent: Parent,
   field: FieldNode
-) => {
+): Output => {
   const config = getFromSchema(parent, field)
-  if (!config) throw new Error('')
-  const name = `${parent.query}_${getAliasedName(field)}`
-  const select = `select ${TABLE}.*`
-  const from = `from $${config.name} ${TABLE}`
-  const result = [name, '=', select, from]
+  if (!config)
+    throw new Error(
+      `No config present for ${field.name.value} in ${parent.name}`
+    )
+  const binding = `${parent.binding}_${getAliasedName(field)}`
+  const select = `select ${TABLE}.* from $${config.name} ${TABLE}`
+  const result = [binding, '=', select]
   if (config.mapping.length) {
-    result.push(`join ${config.name} ${PARENT}`)
+    result.push(`join $${parent.name} ${PARENT} on`)
+    const expressions = []
     for (const { source, target } of config.mapping)
-      result.push(`${PARENT}.${source} = ${TABLE}.${target}`)
+      expressions.push(`${PARENT}.${source} = ${TABLE}.${target}`)
+    result.push(expressions.join(' and '))
   }
   if (field.arguments?.length)
     result.push(handleArguments(getFromSchema, config, field.arguments))
   const expression = result.join(' ') + ';'
-  return { name, expression }
+  return { binding, name: config.name, expression }
 }
+
+type Output = { binding: string; name: string; expression: string }
+type Parent = { binding: string; name: string }
 
 const handleArguments = (
   getFromSchema: GetFromSchema,
