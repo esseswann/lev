@@ -64,7 +64,7 @@ const handleEntity = (
       `No config present for ${field.name.value} in ${parent.name}`
     )
   const binding = `${parent.binding}_${getAliasedName(field)}`
-  const select = `select ${TABLE}.*`
+  const select = `select '${config.name}' as __typename, ${TABLE}.*`
   const from = `from $${config.name} ${TABLE}`
   const result = [binding, '=', select, from]
   const key: string[] = []
