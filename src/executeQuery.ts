@@ -3,7 +3,7 @@ import Long from 'long'
 import { Driver, TypedData } from 'ydb-sdk'
 import { getAliasedName, isField } from '.'
 import getQuery from './getQuery'
-import { Relationship, Schema } from './metadata'
+import { Mapping, Relationship, Schema } from './metadata'
 
 const executeQuery = async (
   schema: Schema,
@@ -18,7 +18,7 @@ const executeQuery = async (
   const end = performance.now()
   const result = combineData(schema, operation, rawData)
   console.log(`Execution time: ${end - start}`)
-  console.log(preparedQuery)
+  // console.log(preparedQuery)
   console.log(result)
   return result
 }
@@ -42,27 +42,43 @@ const combineData = (
   operation: OperationDefinitionNode,
   data: TypedData[][]
 ) => {
-  const result: Record<string, TypedData[]> = {}
   const entity = getEntity(schema, {
     name: 'query',
     cardinality: 'one',
     mapping: [],
     view: ''
   })
-  for (const field of operation.selectionSet.selections)
-    if (isField(field))
-      result[getAliasedName(field)] = handleItems(
-        entity,
-        data.values(),
-        field.selectionSet!.selections
-      )
+  const values = [[{} as TypedData], ...data].values()
+  const result = handleFields(values, operation.selectionSet.selections)
+  return result
+}
+
+const handleFields = (
+  data: IterableIterator<TypedData[]>,
+  fields: readonly SelectionNode[]
+) => {
+  const next = data.next()
+  if (next.done) throw new Error('should not be done by now')
+  const items = next.value
+  const result: TypedData[] = Array(items.length)
+  for (const field of fields)
+    if (isField(field)) {
+      const value =
+        field.selectionSet && handleFields(data, field.selectionSet.selections)
+      for (let index = 0; index < items.length; index++) {
+        if (!result[index]) result[index] = {} as TypedData
+        result[index][getAliasedName(field)] =
+          value || normalizeValue(items[index][field.name.value])
+      }
+    }
   return result
 }
 
 const handleItems = (
   entity: Entity,
   data: IterableIterator<TypedData[]>,
-  fields: readonly SelectionNode[]
+  fields: readonly SelectionNode[],
+  isRelated: IsRelated
 ) => {
   const next = data.next()
   if (next.done) throw new Error('Should not be done by now')
@@ -84,7 +100,9 @@ const handleItem = (
       let value = item[field.name.value]
       const subFields = field.selectionSet?.selections
       if (subFields) {
-        value = handleItems(entity, data, subFields)
+        const childEntity = entity.getRelationship(field.name.value)
+        const isRelated = getIsRelated(childEntity.mapping, item)
+        value = handleItems(childEntity, data, subFields, isRelated)
       } else if (value) value = normalizeValue(value)
       result[getAliasedName(field)] = value
     }
@@ -100,13 +118,22 @@ type Entity = Relationship & {
 
 const getEntity = (schema: Schema, config: Relationship): Entity => ({
   ...config,
-  getRelationship: (key: string) => {
+  getRelationship(key: string) {
     const child = schema.get(`${config.name}.${key}`)
     if (!child) throw new Error(`No config for ${key} in ${config.name}`)
     return getEntity(schema, child)
   }
 })
 
-const isRelated = (item: TypedData) => true
+const getIsRelated =
+  (mapping: Mapping[], parent: TypedData): IsRelated =>
+  (child) => {
+    for (const { source, target } of mapping)
+      if (normalizeValue(parent[source]) !== normalizeValue(child[target]))
+        return false
+    return true
+  }
+
+type IsRelated = (child: TypedData) => boolean
 
 export default executeQuery
