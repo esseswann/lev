@@ -110,13 +110,13 @@ const getSelect = ({ binding, selections, key }: Output) => {
   return `select ${fields} from ${binding};`
 }
 
-const getFields = (fields: readonly SelectionNode[]) => {
-  const result = []
-  for (const field of fields)
-    if (isField(field) && !field.selectionSet)
-      result.push(`${getAliasedName(field)}:${field.name.value}`)
-  return `<|${result.join(',')}|>`
-}
+// const getFields = (fields: readonly SelectionNode[]) => {
+//   const result = []
+//   for (const field of fields)
+//     if (isField(field) && !field.selectionSet)
+//       result.push(`${getAliasedName(field)}:${field.name.value}`)
+//   return `<|${result.join(',')}|>`
+// }
 
 const getKey = (key: string[]) =>
   `Yson::GetHash(Yson::From((${key.join(',')})))`
