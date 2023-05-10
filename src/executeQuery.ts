@@ -17,7 +17,7 @@ const executeQuery = async (
   const rawData = await getData(driver, preparedQuery)
   const end = performance.now()
   const result = combineData(schema, operation, rawData)
-  console.log(`Execution time`, end - start)
+  console.log(`Execution time: ${end - start}`)
   console.log(preparedQuery)
   console.log(result)
   return result
@@ -43,49 +43,39 @@ const combineData = (
   data: TypedData[][]
 ) => {
   const result: Record<string, TypedData[]> = {}
-  let current = 0
-
-  for (const index in operation.selectionSet.selections) {
-    const field = operation.selectionSet.selections[current]
-    if (isField(field)) {
+  for (const field of operation.selectionSet.selections)
+    if (isField(field))
       result[getAliasedName(field)] = handleItems(
         field.selectionSet!.selections,
-        data,
-        parseInt(index)
+        data.values()
       )
-    }
-    current += 1
-  }
   return result
 }
 
 const handleItems = (
   fields: readonly SelectionNode[],
-  data: TypedData[][],
-  index: number
+  data: IterableIterator<TypedData[]>
 ) => {
-  const result = []
-  for (const item of data[index])
-    result.push(handleItem(fields, item, data, index))
-  return result
+  const next = data.next()
+  if (next.done) throw new Error('Should not be done by now')
+  return next.value.map((item) => handleItem(fields, data, item))
 }
 
 const handleItem = (
   fields: readonly SelectionNode[],
-  item: TypedData,
-  data: TypedData[][],
-  index: number
+  data: IterableIterator<TypedData[]>,
+  item: TypedData
 ) => {
-  const result: Record<string, any> = {}
+  const result = {} as TypedData
   for (const field of fields)
     if (isField(field)) {
       let value = item[field.name.value]
       const subFields = field.selectionSet?.selections
-      if (subFields) value = handleItems(subFields, data, (index += 1))
+      if (subFields) value = handleItems(subFields, data)
       else if (value) value = normalizeValue(value)
       result[getAliasedName(field)] = value
     }
-  return result as TypedData
+  return result
 }
 
 const normalizeValue = (value: any) =>
