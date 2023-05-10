@@ -44,6 +44,7 @@ const combineData = (
 ) => {
   const result: Record<string, TypedData[]> = {}
   let current = 0
+
   for (const index in operation.selectionSet.selections) {
     const field = operation.selectionSet.selections[current]
     if (isField(field)) {
@@ -64,9 +65,8 @@ const handleItems = (
   index: number
 ) => {
   const result = []
-  if (data[index])
-    for (const item of data[index])
-      result.push(handleItem(fields, item, data, index))
+  for (const item of data[index])
+    result.push(handleItem(fields, item, data, index))
   return result
 }
 
