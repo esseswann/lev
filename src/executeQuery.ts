@@ -3,7 +3,7 @@ import Long from 'long'
 import { Driver, TypedData } from 'ydb-sdk'
 import { getAliasedName, isField } from '.'
 import getQuery from './getQuery'
-import { Schema } from './metadata'
+import { Relationship, Schema } from './metadata'
 
 const executeQuery = async (
   schema: Schema,
@@ -43,27 +43,39 @@ const combineData = (
   data: TypedData[][]
 ) => {
   const result: Record<string, TypedData[]> = {}
+  const entity = getEntity(schema, {
+    name: 'query',
+    cardinality: 'one',
+    mapping: [],
+    view: ''
+  })
   for (const field of operation.selectionSet.selections)
     if (isField(field))
       result[getAliasedName(field)] = handleItems(
-        field.selectionSet!.selections,
-        data.values()
+        entity,
+        data.values(),
+        field.selectionSet!.selections
       )
   return result
 }
 
 const handleItems = (
-  fields: readonly SelectionNode[],
-  data: IterableIterator<TypedData[]>
+  entity: Entity,
+  data: IterableIterator<TypedData[]>,
+  fields: readonly SelectionNode[]
 ) => {
   const next = data.next()
   if (next.done) throw new Error('Should not be done by now')
-  return next.value.map((item) => handleItem(fields, data, item))
+  const result = []
+  for (const item of next.value)
+    if (isRelated(item)) result.push(handleItem(entity, data, fields, item))
+  return result
 }
 
 const handleItem = (
-  fields: readonly SelectionNode[],
+  entity: Entity,
   data: IterableIterator<TypedData[]>,
+  fields: readonly SelectionNode[],
   item: TypedData
 ) => {
   const result = {} as TypedData
@@ -71,8 +83,9 @@ const handleItem = (
     if (isField(field)) {
       let value = item[field.name.value]
       const subFields = field.selectionSet?.selections
-      if (subFields) value = handleItems(subFields, data)
-      else if (value) value = normalizeValue(value)
+      if (subFields) {
+        value = handleItems(entity, data, subFields)
+      } else if (value) value = normalizeValue(value)
       result[getAliasedName(field)] = value
     }
   return result
@@ -80,5 +93,20 @@ const handleItem = (
 
 const normalizeValue = (value: any) =>
   Long.isLong(value) ? value.toNumber() : value
+
+type Entity = Relationship & {
+  getRelationship(key: string): Entity
+}
+
+const getEntity = (schema: Schema, config: Relationship): Entity => ({
+  ...config,
+  getRelationship: (key: string) => {
+    const child = schema.get(`${config.name}.${key}`)
+    if (!child) throw new Error(`No config for ${key} in ${config.name}`)
+    return getEntity(schema, child)
+  }
+})
+
+const isRelated = (item: TypedData) => true
 
 export default executeQuery
