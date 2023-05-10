@@ -98,11 +98,15 @@ type Output = {
 }
 
 const getSelect = ({ binding, selections, key }: Output) => {
-  const config = {
-    data: getFields(selections),
-    key: getKey(key)
-  }
-  const fields = Object.entries(config).map(handleField).join(', ')
+  // const config: Record<string, string> = {
+  //   data: getFields(selections)
+  //   // key: getKey(key)
+  // }
+  // for (const field of selections)
+  //   if (isField(field) && field.selectionSet)
+  //     config[`${getAliasedName(field)}_key`] = getKey([])
+  // const fields = Object.entries(config).map(handleField).join(', ')
+  const fields = `*`
   return `select ${fields} from ${binding};`
 }
 

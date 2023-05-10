@@ -11,9 +11,10 @@ const executeQuery = async (
 ) => {
   const start = performance.now()
   const query = getQuery(schema, operation.selectionSet)
-  const result = await getData(driver, `${prepend}\n${query}`)
+  const preparedQuery = `${prepend}\n${query}`
+  const result = await getData(driver, preparedQuery)
   const end = performance.now()
-  console.log(query)
+  console.log(preparedQuery)
   console.log(`Execution time`, end - start)
   return result
 }
