@@ -1,4 +1,4 @@
-import { ObjectFieldNode, ObjectValueNode } from 'graphql'
+import { Kind, ObjectFieldNode, ObjectValueNode } from 'graphql'
 import { Output, isObject } from '..'
 import { GetFromSchema, RelationshipConfig } from '../..'
 import handleRelationship from '../handleRelationship'
@@ -23,12 +23,14 @@ function* handleWhereField(
 ): Output {
   if (isObject(field.value))
     for (const predicate of field.value.fields) {
+      if (predicate.value.kind !== Kind.VARIABLE)
+        throw new Error('Only variables are supported')
       const handler = operators[predicate.name.value]
       if (!handler) throw new Error(`No handler for ${predicate.name.value}`)
       const left = getLeft(parent, field)
       yield {
         kind: 'where',
-        data: handler(left, predicate)
+        data: handler(left, predicate.value)
       }
     }
 }

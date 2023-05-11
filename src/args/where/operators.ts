@@ -1,22 +1,16 @@
-import {
-  BooleanValueNode,
-  IntValueNode,
-  ObjectFieldNode,
-  StringValueNode,
-} from 'graphql'
+import { VariableNode } from 'graphql'
 
 const operators: Record<string, EqualityHandler> = {
   _eq(left, field) {
-    const value = field.value as PrimitiveValues
-    return `${left} = ${value.value}`
+    const value = field.name.value
+    return `${left} = $${value}`
   },
   _gte(left, field) {
-    const value = field.value as PrimitiveValues
-    return `${left} > ${value.value}`
-  },
+    const value = field.name.value
+    return `${left} > $${field.name.value}`
+  }
 }
 
-type EqualityHandler = (left: string, field: ObjectFieldNode) => string
-type PrimitiveValues = StringValueNode | IntValueNode | BooleanValueNode
+type EqualityHandler = (left: string, field: VariableNode) => string
 
 export default operators
