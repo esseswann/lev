@@ -58,27 +58,24 @@ const combineData = (
       const name = getAliasedName(root)
       const selections = root.selectionSet!.selections
       const path = ['query', name]
-      result[name] = handleFields(data, path, selections)
+      result[name] = handleFields(getEntityData(data, path), selections)
     }
   return result
 }
 
 const handleFields = (
-  data: Data,
-  path: string[],
+  entityData: EntityData,
   fields: readonly SelectionNode[]
 ) => {
-  const rawItems = data.get(path.join('.'))!
   const result = []
-  for (const rawItem of rawItems) {
+  for (const rawItem of entityData.data) {
     const item: Record<string, any> = {}
-    console.log(path, rawItem)
     for (const field of fields)
       if (isField(field)) {
         const name = getAliasedName(field)
         const selections = field.selectionSet?.selections
         item[name] = selections
-          ? handleFields(data, [...path, name], selections)
+          ? handleFields(entityData.get(name), selections)
           : normalizeValue(rawItem[field.name.value])
       }
     result.push(item)
@@ -89,17 +86,18 @@ const handleFields = (
 const normalizeValue = (value: any) =>
   Long.isLong(value) ? value.toNumber() : value
 
-type Entity = Relationship & {
-  getRelationship(key: string): Entity
-}
-
 const getEntity = (schema: Schema, config: Relationship): Entity => ({
   ...config,
-  getRelationship(key: string) {
+  get(key: string) {
     const child = schema.get(`${config.name}.${key}`)
     if (!child) throw new Error(`No config for ${key} in ${config.name}`)
     return getEntity(schema, child)
   }
+})
+
+const getEntityData = (data: Data, path: string[]): EntityData => ({
+  data: data.get(path.join('.'))!,
+  get: (key: string) => getEntityData(data, path.concat(key))
 })
 
 const getIsRelated =
@@ -113,5 +111,13 @@ const getIsRelated =
 
 type IsRelated = (child: TypedData) => boolean
 type Data = Map<string, TypedData[]>
+type Entity = Relationship & {
+  get(key: string): Entity
+}
+
+type EntityData = {
+  data: TypedData[]
+  get(key: string): EntityData
+}
 
 export default executeQuery
