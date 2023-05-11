@@ -51,7 +51,7 @@ const combineData = (
   })
   const data: Data = new Map()
   for (const index in bindings)
-    data.set(bindings[index].join('.'), rawData[index])
+    data.set(getDataKey(bindings[index]), rawData[index])
   const result: Record<string, any> = {}
   for (const root of operation.selectionSet.selections)
     if (isField(root)) {
@@ -96,7 +96,7 @@ const getEntity = (schema: Schema, config: Relationship): Entity => ({
 })
 
 const getEntityData = (data: Data, path: string[]): EntityData => ({
-  data: data.get(path.join('.'))!,
+  data: data.get(getDataKey(path))!,
   get: (key: string) => getEntityData(data, path.concat(key))
 })
 
@@ -108,7 +108,7 @@ const getIsRelated =
         return false
     return true
   }
-
+const getDataKey = (path: string[]) => path.join('.')
 type IsRelated = (child: TypedData) => boolean
 type Data = Map<string, TypedData[]>
 type Entity = Relationship & {
