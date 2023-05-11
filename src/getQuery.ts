@@ -67,7 +67,7 @@ const handleEntity = (
       `No config present for ${field.name.value} in ${parent.name}`
     )
   const path = parent.path.concat(getAliasedName(field))
-  const select = `select '${config.name}' as __typename, ${TABLE}.*`
+  const select = `select distinct ${TABLE}.*`
   const from = `from $${config.name} ${TABLE}`
   const result = [`${getBinding(path)}`, '=', select, from]
   const key: string[] = []

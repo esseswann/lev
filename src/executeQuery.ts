@@ -62,6 +62,7 @@ const handleData = (
     if (isRelated(item)) result.push(handleFields(entity, fields, item))
   return result
 }
+
 const handleFields = (
   entity: Entity,
   fields: readonly SelectionNode[],
@@ -118,7 +119,9 @@ const getIsRelated =
         return false
     return true
   }
+
 const getDataKey = (path: string[]) => path.join('.')
+
 type IsRelated = (child: TypedData) => boolean
 type DataMap = Map<string, TypedData[]>
 type Entity = {
