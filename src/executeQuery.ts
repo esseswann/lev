@@ -1,4 +1,4 @@
-import { OperationDefinitionNode, SelectionNode } from 'graphql'
+import { FieldNode, OperationDefinitionNode, SelectionNode } from 'graphql'
 import Long from 'long'
 import { Driver, TypedData } from 'ydb-sdk'
 import { getAliasedName, isField } from '.'
@@ -18,7 +18,6 @@ const executeQuery = async (
   const end = performance.now()
   const result = combineData(schema, operation, rawData, bindings)
   console.log(`Execution time: ${end - start}`)
-  // console.log(preparedQuery)
   console.log(result)
   return result
 }
@@ -43,84 +42,66 @@ const combineData = (
   rawData: TypedData[][],
   bindings: string[][]
 ) => {
-  const data: Data = new Map()
+  const data: DataMap = new Map()
   for (const index in bindings)
     data.set(getDataKey(bindings[index]), rawData[index])
-  const result: Record<string, any> = {}
-  for (const root of operation.selectionSet.selections)
-    if (isField(root)) {
-      const name = getAliasedName(root)
-      const selections = root.selectionSet!.selections
-      const path = ['query', name]
-      const entity = getEntity(schema, {
-        name,
-        cardinality: 'one',
-        mapping: [],
-        view: ''
-      })
-      result[name] = handleFields(
-        entity,
-        getEntityData(data, path),
-        selections,
-        () => true
-      )
-    }
+  const entity = {
+    config: getEntity(schema, { name: 'query', mapping: [] }),
+    data: getEntityData(data, ['query'])
+  }
+  const result = handleFields(
+    entity,
+    operation.selectionSet.selections,
+    {} as TypedData
+  )
   return result
 }
 
-const handleFields = (
+const handleData = (
   entity: Entity,
-  entityData: EntityData,
   fields: readonly SelectionNode[],
   isRelated: IsRelated
 ) => {
   const result = []
-  for (const rawItem of entityData.data) {
-    if (isRelated(rawItem)) {
-      const item: Record<string, any> = {}
-      for (const field of fields)
-        if (isField(field)) {
-          const name = getAliasedName(field)
-          let value = normalizeValue(rawItem[field.name.value])
-          const selections = field.selectionSet?.selections
-          if (selections) {
-            const childEntity = entity.get(field.name.value)
-            const isRelated = getIsRelated(childEntity.mapping, rawItem)
-            value = handleFields(
-              childEntity,
-              entityData.get(name),
-              selections,
-              isRelated
-            )
-          }
-          item[name] = value
-        }
-      result.push(item)
-    }
-  }
+  for (const item of entity.data.data)
+    if (isRelated(item)) result.push(handleFields(entity, fields, item))
   return result
 }
+const handleFields = (
+  entity: Entity,
+  fields: readonly SelectionNode[],
+  rawItem: TypedData
+) => {
+  const item: Record<string, any> = {}
+  for (const field of fields)
+    if (isField(field))
+      item[getAliasedName(field)] = handleValue(entity, field, rawItem)
+  return item
+}
 
-// const handleField = () => {
-//   const name = getAliasedName(field)
-//   let value = normalizeValue(rawItem[field.name.value])
-//   const selections = field.selectionSet?.selections
-//   if (selections) {
-//     const childEntity = entity.get(field.name.value)
-//     const isRelated = getIsRelated(childEntity.mapping, rawItem)
-//     value = handleFields(
-//       childEntity,
-//       entityData.get(name),
-//       selections,
-//       isRelated
-//     )
-//   }
-// }
+const handleValue = (
+  { config, data }: Entity,
+  field: FieldNode,
+  item: TypedData
+) => {
+  const name = getAliasedName(field)
+  let value = normalizeValue(item[field.name.value])
+  const selections = field.selectionSet?.selections
+  if (selections) {
+    const child = {
+      config: config.get(field.name.value),
+      data: data.get(name)
+    }
+    const isRelated = getIsRelated(child.config.mapping, item)
+    value = handleData(child, selections, isRelated)
+  }
+  return value
+}
 
 const normalizeValue = (value: any) =>
   Long.isLong(value) ? value.toNumber() : value
 
-const getEntity = (schema: Schema, config: Relationship): Entity => ({
+const getEntity = (schema: Schema, config: Omit<Config, 'get'>): Config => ({
   ...config,
   get(key: string) {
     const child = schema.get(`${config.name}.${key}`)
@@ -129,7 +110,7 @@ const getEntity = (schema: Schema, config: Relationship): Entity => ({
   }
 })
 
-const getEntityData = (data: Data, path: string[]): EntityData => ({
+const getEntityData = (data: DataMap, path: string[]): Data => ({
   data: data.get(getDataKey(path))!,
   get: (key: string) => getEntityData(data, path.concat(key))
 })
@@ -144,14 +125,18 @@ const getIsRelated =
   }
 const getDataKey = (path: string[]) => path.join('.')
 type IsRelated = (child: TypedData) => boolean
-type Data = Map<string, TypedData[]>
-type Entity = Relationship & {
-  get(key: string): Entity
+type DataMap = Map<string, TypedData[]>
+type Entity = {
+  config: Config
+  data: Data
+}
+type Config = Pick<Relationship, 'name' | 'mapping'> & {
+  get(key: string): Config
 }
 
-type EntityData = {
+type Data = {
   data: TypedData[]
-  get(key: string): EntityData
+  get(key: string): Data
 }
 
 export default executeQuery
