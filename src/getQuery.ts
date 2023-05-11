@@ -21,15 +21,18 @@ const getQuery = (schema: Schema, selectionSet: SelectionSetNode) => {
   const expressions: string[] = []
   const selects: string[] = []
   const config = {
-    binding: '$query',
+    path: ['query'],
     name: 'query'
   }
+  const bindings = []
   const entities = handleEntities(getFromSchema, config, fields)
   for (const output of entities) {
     expressions.push(output.expression)
     selects.push(getSelect(output))
+    bindings.push(output.path)
   }
-  return [...views].concat(expressions).concat(selects).join('\n')
+  const query = [...views].concat(expressions).concat(selects).join('\n')
+  return { bindings, query }
 }
 
 const TABLE = 't'
@@ -63,13 +66,13 @@ const handleEntity = (
     throw new Error(
       `No config present for ${field.name.value} in ${parent.name}`
     )
-  const binding = `${parent.binding}_${getAliasedName(field)}`
+  const path = parent.path.concat(getAliasedName(field))
   const select = `select '${config.name}' as __typename, ${TABLE}.*`
   const from = `from $${config.name} ${TABLE}`
-  const result = [binding, '=', select, from]
+  const result = [`${getBinding(path)}`, '=', select, from]
   const key: string[] = []
   if (config.mapping.length) {
-    result.push(`join ${parent.binding} ${PARENT} on`)
+    result.push(`join ${getBinding(parent.path)} ${PARENT} on`)
     const expressions = []
     for (const { source, target } of config.mapping) {
       expressions.push(`${PARENT}.${source} = ${TABLE}.${target}`)
@@ -82,22 +85,16 @@ const handleEntity = (
   const expression = result.join(' ') + ';'
   return {
     key,
-    binding,
+    path,
     expression,
     name: config.name,
     selections: field.selectionSet!.selections
   }
 }
 
-type Output = {
-  key: string[]
-  binding: string
-  name: string
-  expression: string
-  selections: readonly SelectionNode[]
-}
+const getBinding = (path: string[]) => `$${path.join('_')}`
 
-const getSelect = ({ binding, selections, key }: Output) => {
+const getSelect = ({ path, selections, key }: Output) => {
   // const config: Record<string, string> = {
   //   data: getFields(selections)
   //   // key: getKey(key)
@@ -107,7 +104,7 @@ const getSelect = ({ binding, selections, key }: Output) => {
   //     config[`${getAliasedName(field)}_key`] = getKey([])
   // const fields = Object.entries(config).map(handleField).join(', ')
   const fields = `*`
-  return `select ${fields} from ${binding};`
+  return `select ${fields} from ${getBinding(path)};`
 }
 
 // const getFields = (fields: readonly SelectionNode[]) => {
@@ -123,7 +120,12 @@ const getKey = (key: string[]) =>
 
 const handleField = ([key, value]: [string, string]) => `${value} as ${key}`
 
-type Parent = { binding: string; name: string }
+type Parent = { path: string[]; name: string }
+type Output = Parent & {
+  key: string[]
+  expression: string
+  selections: readonly SelectionNode[]
+}
 
 const handleArguments = (
   getFromSchema: GetFromSchema,

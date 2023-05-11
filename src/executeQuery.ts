@@ -12,11 +12,11 @@ const executeQuery = async (
   prepend: string
 ) => {
   const start = performance.now()
-  const query = getQuery(schema, operation.selectionSet)
+  const { bindings, query } = getQuery(schema, operation.selectionSet)
   const preparedQuery = `${prepend}\n${query}`
   const rawData = await getData(driver, preparedQuery)
   const end = performance.now()
-  const result = combineData(schema, operation, rawData)
+  const result = combineData(schema, operation, rawData, bindings)
   console.log(`Execution time: ${end - start}`)
   // console.log(preparedQuery)
   console.log(result)
@@ -40,7 +40,8 @@ const getData = async (driver: Driver, query: string) => {
 const combineData = (
   schema: Schema,
   operation: OperationDefinitionNode,
-  data: TypedData[][]
+  rawData: TypedData[][],
+  bindings: string[][]
 ) => {
   const entity = getEntity(schema, {
     name: 'query',
@@ -48,64 +49,40 @@ const combineData = (
     mapping: [],
     view: ''
   })
-  const values = [[{} as TypedData], ...data].values()
-  const result = handleFields(values, operation.selectionSet.selections)
+  const data: Data = new Map()
+  for (const index in bindings)
+    data.set(bindings[index].join('.'), rawData[index])
+  const result: Record<string, any> = {}
+  for (const root of operation.selectionSet.selections)
+    if (isField(root)) {
+      const name = getAliasedName(root)
+      const selections = root.selectionSet!.selections
+      const path = ['query', name]
+      result[name] = handleFields(data, path, selections)
+    }
   return result
 }
 
 const handleFields = (
-  data: IterableIterator<TypedData[]>,
+  data: Data,
+  path: string[],
   fields: readonly SelectionNode[]
 ) => {
-  const next = data.next()
-  if (next.done) throw new Error('should not be done by now')
-  const items = next.value
-  const result: TypedData[] = Array(items.length)
-  for (const field of fields)
-    if (isField(field)) {
-      const value =
-        field.selectionSet && handleFields(data, field.selectionSet.selections)
-      for (let index = 0; index < items.length; index++) {
-        if (!result[index]) result[index] = {} as TypedData
-        result[index][getAliasedName(field)] =
-          value || normalizeValue(items[index][field.name.value])
-      }
-    }
-  return result
-}
-
-const handleItems = (
-  entity: Entity,
-  data: IterableIterator<TypedData[]>,
-  fields: readonly SelectionNode[],
-  isRelated: IsRelated
-) => {
-  const next = data.next()
-  if (next.done) throw new Error('Should not be done by now')
+  const rawItems = data.get(path.join('.'))!
   const result = []
-  for (const item of next.value)
-    if (isRelated(item)) result.push(handleItem(entity, data, fields, item))
-  return result
-}
-
-const handleItem = (
-  entity: Entity,
-  data: IterableIterator<TypedData[]>,
-  fields: readonly SelectionNode[],
-  item: TypedData
-) => {
-  const result = {} as TypedData
-  for (const field of fields)
-    if (isField(field)) {
-      let value = item[field.name.value]
-      const subFields = field.selectionSet?.selections
-      if (subFields) {
-        const childEntity = entity.getRelationship(field.name.value)
-        const isRelated = getIsRelated(childEntity.mapping, item)
-        value = handleItems(childEntity, data, subFields, isRelated)
-      } else if (value) value = normalizeValue(value)
-      result[getAliasedName(field)] = value
-    }
+  for (const rawItem of rawItems) {
+    const item: Record<string, any> = {}
+    console.log(path, rawItem)
+    for (const field of fields)
+      if (isField(field)) {
+        const name = getAliasedName(field)
+        const selections = field.selectionSet?.selections
+        item[name] = selections
+          ? handleFields(data, [...path, name], selections)
+          : normalizeValue(rawItem[field.name.value])
+      }
+    result.push(item)
+  }
   return result
 }
 
@@ -135,5 +112,6 @@ const getIsRelated =
   }
 
 type IsRelated = (child: TypedData) => boolean
+type Data = Map<string, TypedData[]>
 
 export default executeQuery
