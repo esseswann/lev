@@ -43,12 +43,6 @@ const combineData = (
   rawData: TypedData[][],
   bindings: string[][]
 ) => {
-  const entity = getEntity(schema, {
-    name: 'query',
-    cardinality: 'one',
-    mapping: [],
-    view: ''
-  })
   const data: Data = new Map()
   for (const index in bindings)
     data.set(getDataKey(bindings[index]), rawData[index])
@@ -58,30 +52,70 @@ const combineData = (
       const name = getAliasedName(root)
       const selections = root.selectionSet!.selections
       const path = ['query', name]
-      result[name] = handleFields(getEntityData(data, path), selections)
+      const entity = getEntity(schema, {
+        name,
+        cardinality: 'one',
+        mapping: [],
+        view: ''
+      })
+      result[name] = handleFields(
+        entity,
+        getEntityData(data, path),
+        selections,
+        () => true
+      )
     }
   return result
 }
 
 const handleFields = (
+  entity: Entity,
   entityData: EntityData,
-  fields: readonly SelectionNode[]
+  fields: readonly SelectionNode[],
+  isRelated: IsRelated
 ) => {
   const result = []
   for (const rawItem of entityData.data) {
-    const item: Record<string, any> = {}
-    for (const field of fields)
-      if (isField(field)) {
-        const name = getAliasedName(field)
-        const selections = field.selectionSet?.selections
-        item[name] = selections
-          ? handleFields(entityData.get(name), selections)
-          : normalizeValue(rawItem[field.name.value])
-      }
-    result.push(item)
+    if (isRelated(rawItem)) {
+      const item: Record<string, any> = {}
+      for (const field of fields)
+        if (isField(field)) {
+          const name = getAliasedName(field)
+          let value = normalizeValue(rawItem[field.name.value])
+          const selections = field.selectionSet?.selections
+          if (selections) {
+            const childEntity = entity.get(field.name.value)
+            const isRelated = getIsRelated(childEntity.mapping, rawItem)
+            value = handleFields(
+              childEntity,
+              entityData.get(name),
+              selections,
+              isRelated
+            )
+          }
+          item[name] = value
+        }
+      result.push(item)
+    }
   }
   return result
 }
+
+// const handleField = () => {
+//   const name = getAliasedName(field)
+//   let value = normalizeValue(rawItem[field.name.value])
+//   const selections = field.selectionSet?.selections
+//   if (selections) {
+//     const childEntity = entity.get(field.name.value)
+//     const isRelated = getIsRelated(childEntity.mapping, rawItem)
+//     value = handleFields(
+//       childEntity,
+//       entityData.get(name),
+//       selections,
+//       isRelated
+//     )
+//   }
+// }
 
 const normalizeValue = (value: any) =>
   Long.isLong(value) ? value.toNumber() : value
