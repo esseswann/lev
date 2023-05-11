@@ -1,6 +1,6 @@
 import { FieldNode, OperationDefinitionNode, SelectionNode } from 'graphql'
 import Long from 'long'
-import { Driver, TypedData } from 'ydb-sdk'
+import { Driver, TypedData, Ydb } from 'ydb-sdk'
 import { getAliasedName, isField } from '.'
 import getQuery from './getQuery'
 import { Mapping, Relationship, Schema } from './metadata'
@@ -18,43 +18,38 @@ const executeQuery = async (
   const end = performance.now()
   const result = combineData(schema, operation, rawData, bindings)
   console.log(`Execution time: ${end - start}`)
-  console.log(result)
   return result
 }
 
-const getData = async (driver: Driver, query: string) => {
-  try {
-    const results = await driver.tableClient.withSessionRetry((session) =>
-      session.executeQuery(query)
-    )
-    return results.resultSets.map((value) =>
-      TypedData.createNativeObjects(value)
-    )
-  } catch (error) {
-    console.log(query)
-    throw error
-  }
-}
+const getData = async (driver: Driver, query: string) =>
+  driver.tableClient
+    .withSessionRetry((session) => session.executeQuery(query))
+    .catch((error) => {
+      console.log(query)
+      throw error
+    })
 
 const combineData = (
   schema: Schema,
   operation: OperationDefinitionNode,
-  rawData: TypedData[][],
+  result: Ydb.Table.ExecuteQueryResult,
   bindings: string[][]
 ) => {
   const data: DataMap = new Map()
   for (const index in bindings)
-    data.set(getDataKey(bindings[index]), rawData[index])
+    data.set(
+      getDataKey(bindings[index]),
+      TypedData.createNativeObjects(result.resultSets[index])
+    )
   const entity = {
     config: getEntity(schema, { name: 'query', mapping: [] }),
     data: getEntityData(data, ['query'])
   }
-  const result = handleFields(
+  return handleFields(
     entity,
     operation.selectionSet.selections,
     {} as TypedData
   )
-  return result
 }
 
 const handleData = (
