@@ -1,8 +1,8 @@
 import {
   ArgumentNode,
   FieldNode,
-  SelectionNode,
-  SelectionSetNode
+  OperationDefinitionNode,
+  SelectionNode
 } from 'graphql'
 import {
   GetFromSchema,
@@ -14,8 +14,12 @@ import {
 import getArguments from './args'
 import { Schema } from './metadata'
 
-const getQuery = (schema: Schema, selectionSet: SelectionSetNode) => {
-  const fields = selectionSet.selections.filter(isField)
+const getQuery = (
+  schema: Schema,
+  operation: OperationDefinitionNode,
+  variables: Record<string, unknown>
+) => {
+  const fields = operation.selectionSet.selections.filter(isField)
   const views = new Set<string>()
   const getFromSchema = getRelationshipHandler(schema, views)
   const expressions: string[] = []

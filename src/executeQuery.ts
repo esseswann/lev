@@ -9,10 +9,11 @@ const executeQuery = async (
   schema: Schema,
   driver: Driver,
   operation: OperationDefinitionNode,
+  variables: Record<string, unknown>,
   prepend: string
 ) => {
   const start = performance.now()
-  const { bindings, query } = getQuery(schema, operation.selectionSet)
+  const { bindings, query } = getQuery(schema, operation, variables)
   const preparedQuery = `${prepend}\n${query}`
   const rawData = await getData(driver, preparedQuery)
   const end = performance.now()

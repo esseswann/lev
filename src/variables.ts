@@ -1,7 +1,21 @@
-import { ConstValueNode, Kind, VariableDefinitionNode } from 'graphql'
+import {
+  ConstValueNode,
+  Kind,
+  VariableDefinitionNode,
+  VariableNode
+} from 'graphql'
 
-const getVariable = (variable: VariableDefinitionNode) =>
-  getHandler(variable.type)(variable)
+const prepareVariables = (
+  definitions: VariableDefinitionNode[],
+  variables: Record<string, any>
+): GetVariable => {
+  const map = new Map()
+  for (const definition of definitions) {
+    const value = definition.variable.name.value
+    map.set(value, variables[value])
+  }
+  return (variable) => map.get(variable.name.value)
+}
 
 const getHandler = (type: VariableDefinitionNode['type']): Handler => {
   switch (type.kind) {
@@ -41,5 +55,6 @@ const handleDefaultValue = (value: ConstValueNode): string => {
 }
 
 type Handler = (variable: VariableDefinitionNode) => string
+type GetVariable = (variable: VariableNode) => string | number | boolean
 
-export default getVariable
+export default prepareVariables

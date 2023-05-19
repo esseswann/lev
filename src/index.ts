@@ -7,7 +7,6 @@ import {
 } from 'graphql'
 import getArguments from './args'
 import { Cardinality, Relationship, Schema } from './metadata'
-import getVariable from './variables'
 
 const DATA = 'data'
 const QUERY: RelationshipConfig = {
@@ -23,9 +22,6 @@ const convert = (schema: Schema, operation: OperationDefinitionNode) => {
   const views = new Set<string>()
   const expressions: string[] = []
   const getFromSchema = getRelationshipHandler(schema, views)
-  if (operation.variableDefinitions)
-    for (const variable of operation.variableDefinitions)
-      expressions.push(getVariable(variable))
   const select = handleRoot(
     getFromSchema,
     QUERY,
