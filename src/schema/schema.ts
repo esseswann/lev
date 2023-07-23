@@ -1,11 +1,15 @@
 import { Ydb } from 'ydb-sdk'
 import {
   GraphQLBoolean,
+  GraphQLFieldConfig,
   GraphQLFloat,
   GraphQLInt,
+  GraphQLObjectType,
+  GraphQLOutputType,
   GraphQLScalarType,
   GraphQLString
 } from 'graphql'
+import { ConverterContext } from './context'
 
 const convertPrimitiveType = (
   typeId: Ydb.Type.PrimitiveTypeId
@@ -45,3 +49,30 @@ const convertPrimitiveType = (
       throw new Error(`Unsupported primitive type: ${typeId}`)
   }
 }
+
+const convertStruct = (
+  context: ConverterContext,
+  type: Ydb.IStructType
+): GraphQLObjectType => {
+  const fields: Record<string, GraphQLFieldConfig<unknown, unknown>> = {}
+  for (const member of type.members!) {
+    const newPath = [...context.path, member.name!]
+    fields[context.fieldNameCase(member.name!)] = {
+      type: toGraphQLType({ ...context, path: newPath }, member.type!)
+    }
+  }
+
+  return new GraphQLObjectType({
+    name: context.typeNameCase(context.path.join(' ')),
+    fields
+  })
+}
+
+const toGraphQLType = (
+  context: ConverterContext,
+  type: Ydb.IType
+): GraphQLOutputType => {
+  throw new Error('Not implemented')
+}
+
+export default toGraphQLType
