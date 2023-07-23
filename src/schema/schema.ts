@@ -1,14 +1,15 @@
-import { Ydb } from 'ydb-sdk'
 import {
   GraphQLBoolean,
   GraphQLFieldConfig,
   GraphQLFloat,
   GraphQLInt,
+  GraphQLList,
   GraphQLObjectType,
   GraphQLOutputType,
   GraphQLScalarType,
   GraphQLString
 } from 'graphql'
+import { Ydb } from 'ydb-sdk'
 import { ConverterContext } from './context'
 
 const convertPrimitiveType = (
@@ -72,7 +73,32 @@ const toGraphQLType = (
   context: ConverterContext,
   type: Ydb.IType
 ): GraphQLOutputType => {
-  throw new Error('Not implemented')
+  if (type.typeId) {
+    return convertPrimitiveType(type.typeId)
+  } else if (type.listType) {
+    return new GraphQLList(toGraphQLType(context, type.listType!.item!))
+  } else if (type.structType) {
+    return convertStruct(context, type.structType)
+  } else if (type.variantType) {
+    // TODO: implement variant type
+    return GraphQLString
+  } else if (type.optionalType)
+    return toGraphQLType(context, type.optionalType.item!)
+
+  // FIXME: currently there is no way to check if the given type is non nullable
+  // if (result) return new GraphQLNonNull(result)
+
+  // These types don't have GraphQL representation:
+  //  - type.voidType
+  //  - type.nullType
+  //  - type.emptyListType
+  //  - type.emptyDictType
+  //  - type.pgType
+  //  - type.taggedType
+  //  - type.dictType
+  //  - type.tupleType, FIXME: might be list of unions
+
+  throw new Error(`Unsupported type: ${JSON.stringify(type, null, 2)}`)
 }
 
 export default toGraphQLType
