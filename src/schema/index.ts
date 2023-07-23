@@ -10,7 +10,7 @@ import { Driver } from 'ydb-sdk'
 import caseConverters from '../caseConverters'
 import { Schema } from '../metadata'
 import { ConverterContext } from './context'
-import { convertStruct } from './graphql'
+import { convertStruct } from './graphqlConverters'
 
 const generateSchema = async (
   driver: Driver,
