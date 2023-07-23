@@ -4,6 +4,7 @@ import {
   GraphQLFloat,
   GraphQLInt,
   GraphQLList,
+  GraphQLNamedOutputType,
   GraphQLObjectType,
   GraphQLOutputType,
   GraphQLScalarType,
@@ -51,25 +52,28 @@ const convertPrimitiveType = (
   }
 }
 
-const convertStruct = (
+export const convertStruct = (
   context: ConverterContext,
-  type: Ydb.IStructType
-): GraphQLObjectType => {
+  struct: Ydb.IStructType
+): GraphQLNamedOutputType => {
   const fields: Record<string, GraphQLFieldConfig<unknown, unknown>> = {}
-  for (const member of type.members!) {
-    const newPath = [...context.path, member.name!]
-    fields[context.fieldNameCase(member.name!)] = {
-      type: toGraphQLType({ ...context, path: newPath }, member.type!)
+  for (const { name, type } of struct.members!) {
+    const newPath = [...context.path, name!]
+    const key = context.fieldNameCase(name!)
+    fields[key] = {
+      type: toGraphQLType({ ...context, path: newPath }, type!)
     }
   }
 
+  const name = context.typeNameCase(context.path.join(' '))
+
   return new GraphQLObjectType({
-    name: context.typeNameCase(context.path.join(' ')),
+    name,
     fields
   })
 }
 
-const toGraphQLType = (
+export const toGraphQLType = (
   context: ConverterContext,
   type: Ydb.IType
 ): GraphQLOutputType => {
@@ -100,5 +104,3 @@ const toGraphQLType = (
 
   throw new Error(`Unsupported type: ${JSON.stringify(type, null, 2)}`)
 }
-
-export default toGraphQLType
