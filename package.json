@@ -29,7 +29,7 @@
   "dependencies": {
     "@types/lodash": "4.14.195",
     "fp-ts": "2.14.0",
-    "graphql": "16.*",
+    "graphql": "16.7.1",
     "io-ts": "2.2.20",
     "lodash": "4.17.21",
     "yaml": "2.2.2",
