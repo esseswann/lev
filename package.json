@@ -24,7 +24,7 @@
     "esbuild": "0.17.18",
     "node": "20.1.0",
     "ts-node": "10.9.1",
-    "ydb-sdk": "4.5.0"
+    "ydb-sdk": "4.6.0"
   },
   "dependencies": {
     "@types/lodash": "4.14.195",
