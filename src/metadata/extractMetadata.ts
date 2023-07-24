@@ -71,7 +71,7 @@ const checkView = (name: string, str: string) => {
     )
 }
 
-const prepareView = (str: string) => {
+export const prepareView = (str: string) => {
   let cleaned = str
     .replace(/--.*/g, '') // remove single line comments
     .replace(/\/\*[^]*?\*\//g, '') // remove multi-line comments
