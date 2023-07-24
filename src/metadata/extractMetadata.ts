@@ -72,9 +72,13 @@ const checkView = (name: string, str: string) => {
 }
 
 const prepareView = (str: string) => {
-  let trimmed = str.replace(/\s{1,}/g, ' ').trim()
-  if (trimmed[trimmed.length - 1] !== ';') trimmed += ';'
-  return trimmed
+  let cleaned = str
+    .replace(/--.*/g, '') // remove single line comments
+    .replace(/\/\*[^]*?\*\//g, '') // remove multi-line comments
+    .replace(/\s{1,}/g, ' ') // minify
+    .trim()
+  if (cleaned[cleaned.length - 1] !== ';') cleaned += ';'
+  return cleaned
 }
 
 export default processMetadata
