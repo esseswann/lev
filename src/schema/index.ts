@@ -19,7 +19,6 @@ const generateSchema = async (
   const rootFields: ThunkObjMap<GraphQLFieldConfig<unknown, unknown>> = {}
 
   for (const value of metadata.values()) {
-    // const query = `${value.view}\nselect * from \$${value.name};\nselect * from \$${value.name};`
     const query = `${value.view}\nselect * from \$${value.name};`
 
     const { queryAst } = await driver.tableClient.withSession((session) =>
