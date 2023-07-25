@@ -56,13 +56,18 @@ export const convertStruct = (
   context: ConverterContext,
   struct: Ydb.IStructType
 ): GraphQLNamedOutputType => {
-  const fields: Record<string, GraphQLFieldConfig<unknown, unknown>> = {}
-  for (const { name, type } of struct.members!) {
-    const newPath = [...context.path, name!]
-    const key = context.fieldNameCase(name!)
-    fields[key] = {
-      type: toGraphQLType({ ...context, path: newPath }, type!)
+  const fields = () => {
+    const result: Record<string, GraphQLFieldConfig<unknown, unknown>> = {}
+
+    for (const { name, type } of struct.members!) {
+      const newPath = [...context.path, name!]
+      const key = context.fieldNameCase(name!)
+      result[key] = {
+        type: toGraphQLType({ ...context, path: newPath }, type!)
+      }
     }
+
+    return result
   }
 
   const name = context.typeNameCase(context.path.join(' '))
