@@ -10,7 +10,6 @@
     "name": "jsus"
   },
   "scripts": {
-    "dev": "npx nodemon tests/index.ts",
     "build": "rm -rf lib && tsc",
     "test": "jest"
   },
