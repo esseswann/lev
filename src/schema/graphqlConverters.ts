@@ -60,7 +60,7 @@ export const convertStruct = (
   const fields = () => {
     const result: Record<string, GraphQLFieldConfig<unknown, unknown>> = {}
 
-    for (const { name, type } of struct.members!) {
+    for (const { name, type } of struct?.members || []) {
       const newPath = [...context.path, name!]
       const key = context.fieldNameCase(name!)
       result[key] = {
