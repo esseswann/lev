@@ -18,11 +18,13 @@ const generateSchema = async (
 ): Promise<GraphQLSchema> => {
   const rootFields: ThunkObjMap<GraphQLFieldConfig<unknown, unknown>> = {}
 
-  const relationships: Map<string, Array<Relationship>> = new Map()
+  const relationships: Map<string, Map<string, Relationship>> = new Map()
   for (const [key, value] of metadata.entries()) {
-    const viewName = key.split('.')[1]
-    const current = relationships.get(viewName) || []
-    relationships.set(viewName, [...current, value])
+    const [viewName, entry] = key.split('.')
+    if (!relationships.has(viewName)) {
+      relationships.set(viewName, new Map())
+    }
+    relationships.get(viewName)!.set(entry, value)
   }
 
   for (const [key, value] of metadata.entries()) {

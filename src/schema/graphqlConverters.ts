@@ -5,6 +5,7 @@ import {
   GraphQLInt,
   GraphQLList,
   GraphQLNamedOutputType,
+  GraphQLNonNull,
   GraphQLObjectType,
   GraphQLOutputType,
   GraphQLScalarType,
@@ -64,6 +65,19 @@ export const convertStruct = (
       const key = context.fieldNameCase(name!)
       result[key] = {
         type: toGraphQLType({ ...context, path: newPath }, type!)
+      }
+    }
+
+    const viewName = context.path[context.path.length - 1]
+    const relationships = context.relationships.get(viewName)?.entries()
+    if (!relationships) return result
+    for (const [fieldName, relationship] of relationships) {
+      const type = GraphQLString // FIXME
+      result[context.fieldNameCase(fieldName)] = {
+        type:
+          relationship.cardinality == 'one'
+            ? type!
+            : new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(type!)))
       }
     }
 
