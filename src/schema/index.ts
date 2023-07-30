@@ -1,6 +1,8 @@
 import {
   GraphQLFieldConfig,
+  GraphQLList,
   GraphQLNamedType,
+  GraphQLNonNull,
   GraphQLObjectType,
   GraphQLSchema
 } from 'graphql'
@@ -57,7 +59,20 @@ const generateSchema = async (
     types: Object.values(rootFields).map(
       ({ type }) => type
     ) as GraphQLNamedType[],
-    query: new GraphQLObjectType({ name: 'query', fields: rootFields })
+    query: new GraphQLObjectType({
+      name: 'query',
+      fields: () => {
+        const result: Record<string, GraphQLFieldConfig<any, any>> = {}
+        for (const [k, v] of Object.entries(rootFields)) {
+          result[k] = {
+            type: new GraphQLNonNull(
+              new GraphQLList(new GraphQLNonNull(v.type))
+            )
+          }
+        }
+        return result
+      }
+    })
   })
 
   return schema
