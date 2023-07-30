@@ -1,14 +1,12 @@
 import {
   GraphQLFieldConfig,
-  GraphQLList,
   GraphQLNamedType,
-  GraphQLNonNull,
   GraphQLObjectType,
   GraphQLSchema
 } from 'graphql'
 import { ObjMap } from 'graphql/jsutils/ObjMap'
 import extractTypes from 'ydb-codegen/lib/extractIo/extractTypes'
-import { Driver } from 'ydb-sdk'
+import { Driver, Ydb } from 'ydb-sdk'
 import caseConverters from '../caseConverters'
 import { Relationship, Schema } from '../metadata'
 import { ConverterContext } from './context'
@@ -29,15 +27,8 @@ const generateSchema = async (
     relationships.get(viewName)!.set(entry, value)
   }
 
-  for (const [key, value] of metadata.entries()) {
+  for (const value of metadata.values()) {
     if (value.mapping.length !== 0) continue // handle views only
-
-    const query = `${value.view}\nselect * from \$${value.name};`
-
-    const { queryAst } = await driver.tableClient.withSession((session) =>
-      session.explainQuery(query)
-    )
-    const { outputs } = extractTypes(queryAst)
 
     const context: ConverterContext = {
       path: [value.name],
@@ -47,35 +38,44 @@ const generateSchema = async (
       typeNameCase: caseConverters.pascalCase,
       fieldNameCase: caseConverters.camelCase
     }
-
-    const struct = outputs[outputs.length - 1].listType?.item?.structType!
+    const struct = await getStructFromQuery(driver, value)
     const graphqlType = convertStruct(context, struct)
     rootFields[value.name] = {
       type: graphqlType
     }
   }
 
+  const context: ConverterContext = {
+    path: ['query'],
+    relationships: relationships,
+    rootFields: rootFields,
+    // FIXME: should come from config
+    typeNameCase: caseConverters.pascalCase,
+    fieldNameCase: caseConverters.camelCase
+  }
+
+  const query = convertStruct(context, new Ydb.StructType({ members: [] }))
+
   const schema = new GraphQLSchema({
     types: Object.values(rootFields).map(
       ({ type }) => type
     ) as GraphQLNamedType[],
-    query: new GraphQLObjectType({
-      name: 'query',
-      fields: () => {
-        const result: Record<string, GraphQLFieldConfig<any, any>> = {}
-        for (const [k, v] of Object.entries(rootFields)) {
-          result[k] = {
-            type: new GraphQLNonNull(
-              new GraphQLList(new GraphQLNonNull(v.type))
-            )
-          }
-        }
-        return result
-      }
-    })
+    query: query as GraphQLObjectType
   })
 
   return schema
+}
+
+const getStructFromQuery = async (
+  driver: Driver,
+  value: Pick<Relationship, 'name' | 'view'>
+): Promise<Ydb.IStructType> => {
+  const query = `${value.view}\nselect * from \$${value.name};`
+  const { queryAst } = await driver.tableClient.withSession((session) =>
+    session.explainQuery(query)
+  )
+  const outputs = extractTypes(queryAst).outputs
+  return outputs[outputs.length - 1].listType?.item?.structType!
 }
 
 export default generateSchema
