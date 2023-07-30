@@ -2,9 +2,9 @@ import {
   GraphQLFieldConfig,
   GraphQLNamedType,
   GraphQLObjectType,
-  GraphQLSchema,
-  ThunkObjMap
+  GraphQLSchema
 } from 'graphql'
+import { ObjMap } from 'graphql/jsutils/ObjMap'
 import extractTypes from 'ydb-codegen/lib/extractIo/extractTypes'
 import { Driver } from 'ydb-sdk'
 import caseConverters from '../caseConverters'
@@ -16,7 +16,7 @@ const generateSchema = async (
   driver: Driver,
   metadata: Schema
 ): Promise<GraphQLSchema> => {
-  const rootFields: ThunkObjMap<GraphQLFieldConfig<unknown, unknown>> = {}
+  const rootFields: ObjMap<GraphQLFieldConfig<unknown, unknown>> = {}
 
   const relationships: Map<string, Map<string, Relationship>> = new Map()
   for (const [key, value] of metadata.entries()) {
@@ -40,6 +40,7 @@ const generateSchema = async (
     const context: ConverterContext = {
       path: [value.name],
       relationships: relationships,
+      rootFields: rootFields,
       // FIXME: should come from config
       typeNameCase: caseConverters.pascalCase,
       fieldNameCase: caseConverters.camelCase

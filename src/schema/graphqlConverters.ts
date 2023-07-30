@@ -72,7 +72,7 @@ export const convertStruct = (
     const relationships = context.relationships.get(viewName)?.entries()
     if (!relationships) return result
     for (const [fieldName, relationship] of relationships) {
-      const type = GraphQLString // FIXME
+      const type = context.rootFields[relationship.name].type
       result[context.fieldNameCase(fieldName)] = {
         type:
           relationship.cardinality == 'one'
