@@ -8,7 +8,7 @@ import {
 import extractTypes from 'ydb-codegen/lib/extractIo/extractTypes'
 import { Driver } from 'ydb-sdk'
 import caseConverters from '../caseConverters'
-import { Schema } from '../metadata'
+import { Relationship, Schema } from '../metadata'
 import { ConverterContext } from './context'
 import { convertStruct } from './graphqlConverters'
 
@@ -18,7 +18,16 @@ const generateSchema = async (
 ): Promise<GraphQLSchema> => {
   const rootFields: ThunkObjMap<GraphQLFieldConfig<unknown, unknown>> = {}
 
-  for (const value of metadata.values()) {
+  const relationships: Map<string, Array<Relationship>> = new Map()
+  for (const [key, value] of metadata.entries()) {
+    const viewName = key.split('.')[1]
+    const current = relationships.get(viewName) || []
+    relationships.set(viewName, [...current, value])
+  }
+
+  for (const [key, value] of metadata.entries()) {
+    if (value.mapping.length !== 0) continue // handle views only
+
     const query = `${value.view}\nselect * from \$${value.name};`
 
     const { queryAst } = await driver.tableClient.withSession((session) =>
@@ -28,6 +37,7 @@ const generateSchema = async (
 
     const context: ConverterContext = {
       path: [value.name],
+      relationships: relationships,
       // FIXME: should come from config
       typeNameCase: caseConverters.pascalCase,
       fieldNameCase: caseConverters.camelCase
