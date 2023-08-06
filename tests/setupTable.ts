@@ -1,11 +1,37 @@
-import path from 'path'
-import { Driver } from 'ydb-sdk'
-import { readFile } from 'fs/promises'
+import {
+  Column,
+  Session,
+  StructFields,
+  TableDescription,
+  TypedValues,
+  Types,
+  Ydb
+} from 'ydb-sdk'
 
-export const processTable = async (database: Driver, folder: string) => {
-  const tablePath = path.join(folder, 'table.sql')
-  const tableQuery = await readFile(tablePath, 'utf-8')
-  const dataPath = path.join(folder, 'data.csv')
-  // TODO create schema from sql
-  // TODO add data from csv
+const setupTable: SetupTable = async (session, path, table, data) => {
+  await session.createTable(path, table)
+  await session.bulkUpsert(path, convertRows(table, data))
 }
+
+const convertRows = (
+  table: TableDescription,
+  data: unknown[]
+): Ydb.TypedValue =>
+  TypedValues.list(
+    Types.struct(table.columns.reduce(columnsReducer, {})),
+    data
+  ) as Ydb.TypedValue
+
+const columnsReducer = (result: StructFields, { name, type }: Column) => ({
+  ...result,
+  [name]: type
+})
+
+type SetupTable = (
+  session: Session,
+  path: string,
+  table: TableDescription,
+  data: Record<string, unknown>[]
+) => void
+
+export default setupTable
