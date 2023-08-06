@@ -3,7 +3,8 @@ import data from './data.json'
 
 export const up = (session: Session, path: string) =>
   session.createTable(path, new TableDescription()
-    .withColumn(new Column('kek', Types.UINT64))
+    .withColumn(new Column('id', Types.UINT64))
+    .withColumn(new Column('name', Types.UTF8))
     .withPrimaryKey('id'))
 
 export const seed = (session: Session, path: string) =>
