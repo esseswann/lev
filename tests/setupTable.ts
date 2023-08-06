@@ -10,7 +10,7 @@ import {
 
 const setupTable: SetupTable = async (session, path, table, data) => {
   await session.createTable(path, table)
-  await session.bulkUpsert(path, convertRows(table, data))
+  if (data) await session.bulkUpsert(path, convertRows(table, data))
 }
 
 const convertRows = (
@@ -31,7 +31,7 @@ type SetupTable = (
   session: Session,
   path: string,
   table: TableDescription,
-  data: Record<string, unknown>[]
+  data?: Record<string, unknown>[]
 ) => void
 
 export default setupTable
