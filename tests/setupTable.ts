@@ -15,7 +15,7 @@ const setupTable: SetupTable = async (session, path, table, data) => {
 
 const convertRows = (
   table: TableDescription,
-  data: unknown[]
+  data: Record<string, unknown>[]
 ): Ydb.TypedValue =>
   TypedValues.list(
     Types.struct(table.columns.reduce(columnsReducer, {})),

@@ -1,2 +1,2 @@
 $user = SELECT *
-  FROM `user`
+          FROM `user`
