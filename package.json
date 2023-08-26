@@ -30,6 +30,7 @@
     "ydb-sdk": "4.5.0"
   },
   "dependencies": {
+    "@types/lodash": "4.14.195",
     "@types/node": "20.4.8",
     "fp-ts": "2.14.0",
     "graphql": "16.*",
