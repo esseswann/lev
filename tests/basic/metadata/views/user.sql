@@ -1,0 +1,2 @@
+$user = SELECT *
+          FROM `user`
