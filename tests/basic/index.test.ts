@@ -1,4 +1,9 @@
+import { readFile } from 'fs/promises'
+import { printSchema } from 'graphql'
+import path from 'path'
 import { TypedData } from 'ydb-sdk'
+import extractMetadata from '../../src/metadata/extractMetadata'
+import generateSchema from '../../src/schema'
 import database from '../database'
 import setupTable from '../setupTable'
 import accessTable from './tables/access'
@@ -39,5 +44,17 @@ describe('my database tests', () => {
       }
     )
     expect(result[0]['id']).toBe(1)
+  })
+  test('should generate correct schema', async () => {
+    const base = path.join(__dirname, './metadata')
+    const metadata = await extractMetadata(base)
+    const gotSchema = await generateSchema(database, metadata)
+
+    const wantSchema = await readFile(
+      path.join(__dirname, 'schema.graphql'),
+      'utf8'
+    )
+
+    expect(printSchema(gotSchema)).toBe(wantSchema)
   })
 })
