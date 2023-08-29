@@ -1,0 +1,11 @@
+type User {
+  id: Int
+  longestRun: Interval
+  name: String
+}
+
+scalar Interval
+
+type Query {
+  user: [User!]!
+}
