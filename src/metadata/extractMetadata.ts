@@ -12,11 +12,18 @@ const QUERY = 'query'
 
 async function processMetadata(directory: string): Promise<Schema> {
   const schema: Schema = new Map()
+
+  await processViews(directory, schema)
+  await processConfigs(directory, schema)
+
+  return schema
+}
+
+async function processViews(directory: string, schema: Schema) {
   const viewsPath = path.join(directory, VIEWS)
-  const configsPath = path.join(directory, CONFIGS)
 
   for await (const { name, content } of iterateDirectory(viewsPath)) {
-    checkView(name, content) // FIXME
+    checkView(name, content) // FIXME: assuming checkView doesn't have side effects
     const view = prepareView(content)
 
     schema.set(`${QUERY}.${name}`, {
@@ -25,6 +32,19 @@ async function processMetadata(directory: string): Promise<Schema> {
       cardinality: 'many',
       mapping: []
     })
+  }
+}
+
+async function processConfigs(directory: string, schema: Schema) {
+  const configsPath = path.join(directory, CONFIGS)
+
+  try {
+    await fs.access(configsPath)
+  } catch (err) {
+    console.warn(
+      `Directory ${configsPath} does not exist. Skipping configs processing.`
+    )
+    return
   }
 
   for await (const { name, content } of iterateDirectory(configsPath)) {
@@ -43,8 +63,6 @@ async function processMetadata(directory: string): Promise<Schema> {
       schema.set(`${name}.${key}`, relationshipConfig)
     }
   }
-
-  return schema
 }
 
 async function* iterateDirectory(directory: string) {
