@@ -15,6 +15,7 @@ import { Ydb } from 'ydb-sdk'
 import { ConverterContext } from './context'
 
 const convertPrimitiveType = (
+  context: ConverterContext,
   typeId: Ydb.Type.PrimitiveTypeId
 ): GraphQLScalarType => {
   switch (typeId) {
@@ -47,7 +48,11 @@ const convertPrimitiveType = (
     case Ydb.Type.PrimitiveTypeId.UUID:
     case Ydb.Type.PrimitiveTypeId.JSON_DOCUMENT:
     case Ydb.Type.PrimitiveTypeId.DYNUMBER:
-      return GraphQLString
+      return new GraphQLScalarType({
+        name: context.typeNameCase(
+          Ydb.Type.PrimitiveTypeId[typeId].toLowerCase()
+        )
+      })
     case Ydb.Type.PrimitiveTypeId.PRIMITIVE_TYPE_ID_UNSPECIFIED:
       throw new Error(`Unsupported primitive type: ${typeId}`)
   }
@@ -97,7 +102,7 @@ export const toGraphQLType = (
   type: Ydb.IType
 ): GraphQLOutputType => {
   if (type.typeId) {
-    return convertPrimitiveType(type.typeId)
+    return convertPrimitiveType(context, type.typeId)
   } else if (type.listType) {
     return new GraphQLList(toGraphQLType(context, type.listType!.item!))
   } else if (type.structType) {
