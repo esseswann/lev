@@ -3,6 +3,12 @@ import fs from 'fs/promises'
 import path from 'path'
 
 export const getTemplates = async (templatesPath: PathLike) => {
+  try {
+    await fs.access(templatesPath)
+  } catch (err) {
+    return new Map<string, Template>()
+  }
+
   const dir = await fs.opendir(templatesPath, { recursive: true })
   const templates = new Map<string, Template>()
   for await (const dirent of dir)
