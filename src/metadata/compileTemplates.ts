@@ -3,9 +3,15 @@ import fs from 'fs/promises'
 import path from 'path'
 
 export const getTemplates = async (templatesPath: PathLike) => {
+  let stats
   try {
-    await fs.access(templatesPath)
+    stats = await fs.stat(templatesPath)
   } catch (err) {
+    return new Map<string, Template>()
+  }
+
+  if (!stats.isDirectory()) {
+    console.warn(`${templatesPath} is not a directory`)
     return new Map<string, Template>()
   }
 
