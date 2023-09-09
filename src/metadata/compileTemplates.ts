@@ -15,7 +15,9 @@ export const getTemplates = async (templatesPath: PathLike) => {
     if (dirent.isFile()) {
       const filePath = dirent.path
       if (path.extname(filePath) === '.sql')
-        templates.set(dirent.name, { filePath })
+        templates.set(path.relative(templatesPath.toString(), filePath), {
+          filePath
+        })
     }
 
   return templates
