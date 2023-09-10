@@ -9,7 +9,6 @@ export const getTemplates = async (templatesPath: PathLike) => {
   } catch (err) {
     return new Map<string, Template>()
   }
-
   if (!stats.isDirectory()) {
     console.warn(`${templatesPath} is not a directory`)
     return new Map<string, Template>()
@@ -20,9 +19,11 @@ export const getTemplates = async (templatesPath: PathLike) => {
   for await (const dirent of dir)
     if (dirent.isFile()) {
       const filePath = dirent.path
+      const content = await fs.readFile(filePath, 'utf-8')
       if (path.extname(filePath) === '.sql')
         templates.set(path.relative(templatesPath.toString(), filePath), {
-          filePath
+          filePath,
+          content
         })
     }
 
@@ -31,5 +32,6 @@ export const getTemplates = async (templatesPath: PathLike) => {
 
 type Template = {
   filePath: string
+  content: string
   root?: string
 }
