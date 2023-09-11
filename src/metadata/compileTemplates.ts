@@ -20,6 +20,15 @@ const compileTemplates = async (
         `Template ${templateName} imported from file ${fileName} does not exist.`
       )
     }
+    if (template.root === rootFileName) {
+      const lastProccessedBy = template!.lastProccessedBy
+      throw new Error(
+        `Duplicate import encounted in ${fileName}.\nImported ${templateName} is already imported in ${lastProccessedBy}.`
+      )
+    } else {
+      template.root = rootFileName
+      template.lastProccessedBy = fileName
+    }
 
     compiled +=
       '\n' +
@@ -66,6 +75,7 @@ type Template = {
   filePath: string
   content: string
   root?: string
+  lastProccessedBy?: string
 }
 
 export default compileTemplates
