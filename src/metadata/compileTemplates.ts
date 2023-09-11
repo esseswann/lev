@@ -2,6 +2,38 @@ import { PathLike } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 
+const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
+
+const compileTemplates = async (
+  rootFileName: string,
+  templates: Map<string, Template>,
+  fileName: string,
+  fileContent: string
+) => {
+  let compiled: string = ''
+  const matches = [...fileContent.matchAll(IMPORT_REGEX)]
+  for (const match of matches) {
+    const templateName = match[1]
+    const template = templates.get(templateName)
+    if (template === undefined) {
+      throw new Error(
+        `Template ${templateName} imported from file ${fileName} does not exist.`
+      )
+    }
+
+    compiled +=
+      '\n' +
+      (await compileTemplates(
+        rootFileName,
+        templates,
+        templateName,
+        template.content
+      ))
+  }
+
+  return (compiled += '\n' + fileContent)
+}
+
 export const getTemplates = async (templatesPath: PathLike) => {
   let stats
   try {
@@ -35,3 +67,5 @@ type Template = {
   content: string
   root?: string
 }
+
+export default compileTemplates
