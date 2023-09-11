@@ -11,35 +11,36 @@ const compileTemplates = async (
   fileContent: string
 ) => {
   let compiled: string = ''
+
   const matches = [...fileContent.matchAll(IMPORT_REGEX)]
   for (const match of matches) {
     const templateName = match[1]
     const template = templates.get(templateName)
-    if (template === undefined)
+
+    if (!template)
       throw new Error(
         `Template ${templateName} imported from ${fileName} does not exist.`
       )
-    if (template.root === rootFileName) {
-      const lastProccessedBy = template!.lastProccessedBy
-      throw new Error(
-        `Duplicate import encounted in ${fileName}.\nImported ${templateName} is already imported in ${lastProccessedBy}.`
-      )
-    } else {
-      template.root = rootFileName
-      template.lastProccessedBy = fileName
-    }
 
-    compiled +=
-      '\n' +
-      (await compileTemplates(
-        rootFileName,
-        templates,
-        templateName,
-        template.content
-      ))
+    if (template.root === rootFileName)
+      throw new Error(
+        `Duplicate import encounted in ${fileName}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
+      )
+
+    template.root = rootFileName
+    template.lastProccessedBy = fileName
+
+    const templateContent = await compileTemplates(
+      rootFileName,
+      templates,
+      templateName,
+      template.content
+    )
+
+    compiled += `\n${templateContent}`
   }
 
-  return (compiled += '\n' + fileContent)
+  return `${compiled}\n${fileContent}`
 }
 
 export const getTemplates = async (templatesPath: PathLike) => {
