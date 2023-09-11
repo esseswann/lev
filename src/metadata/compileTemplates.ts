@@ -15,11 +15,10 @@ const compileTemplates = async (
   for (const match of matches) {
     const templateName = match[1]
     const template = templates.get(templateName)
-    if (template === undefined) {
+    if (template === undefined)
       throw new Error(
-        `Template ${templateName} imported from file ${fileName} does not exist.`
+        `Template ${templateName} imported from ${fileName} does not exist.`
       )
-    }
     if (template.root === rootFileName) {
       const lastProccessedBy = template!.lastProccessedBy
       throw new Error(
