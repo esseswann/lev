@@ -5,42 +5,41 @@ import path from 'path'
 const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
 
 const compileTemplates = async (
-  rootFileName: string,
-  templates: Map<string, Template>,
-  fileName: string,
-  fileContent: string
+  rootFilePath: string,
+  templates: Map<string, Template>
 ) => {
-  let compiled: string = ''
+  const compile = async (filePath: string, fileContent: string) => {
+    let compiled: string = ''
 
-  const matches = [...fileContent.matchAll(IMPORT_REGEX)]
-  for (const match of matches) {
-    const templateName = match[1]
-    const template = templates.get(templateName)
+    const matches = [...fileContent.matchAll(IMPORT_REGEX)]
+    for (const match of matches) {
+      const templateName = match[1]
+      const template = templates.get(templateName)
 
-    if (!template)
-      throw new Error(
-        `Template ${templateName} imported from ${fileName} does not exist.`
-      )
+      if (!template)
+        throw new Error(
+          `Template ${templateName} imported from ${filePath} does not exist.`
+        )
 
-    if (template.root === rootFileName)
-      throw new Error(
-        `Duplicate import encounted in ${fileName}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
-      )
+      if (template.root === rootFilePath)
+        throw new Error(
+          `Duplicate import encounted in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
+        )
 
-    template.root = rootFileName
-    template.lastProccessedBy = fileName
+      template.root = rootFilePath
+      template.lastProccessedBy = filePath
 
-    const templateContent = await compileTemplates(
-      rootFileName,
-      templates,
-      templateName,
-      template.content
-    )
+      const templateContent = await compile(template.filePath, template.content)
 
-    compiled += `\n${templateContent}`
+      compiled += `\n${templateContent}`
+    }
+
+    return `${compiled}\n${fileContent}`
   }
 
-  return `${compiled}\n${fileContent}`
+  const content = await fs.readFile(rootFilePath, 'utf-8')
+
+  return await compile(rootFilePath, content)
 }
 
 export const getTemplates = async (templatesPath: PathLike) => {
