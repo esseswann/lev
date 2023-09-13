@@ -11,40 +11,42 @@ const compileTemplates = async (
   templates: Map<string, Template>
 ) => {
   const rootFilePath = path.join(VIEWS, viewName)
+  const rootFullFilePath = path.join(directory, rootFilePath)
 
-  const compile = async (filePath: string, fileContent: string) => {
-    let compiled: string = ''
+  const compile = async (
+    filePath: string,
+    fileContent: string
+  ): Promise<string> => {
+    const imports = [...fileContent.matchAll(IMPORT_REGEX)].map(
+      async (match) => {
+        const templateName = match[1]
+        const template = templates.get(templateName)
 
-    const matches = [...fileContent.matchAll(IMPORT_REGEX)]
-    for (const match of matches) {
-      const templateName = match[1]
-      const template = templates.get(templateName)
+        if (!template) {
+          throw new Error(
+            `Template ${templateName} imported from ${filePath} does not exist.`
+          )
+        }
 
-      if (!template)
-        throw new Error(
-          `Template ${templateName} imported from ${filePath} does not exist.`
-        )
+        if (template.root === filePath) {
+          throw new Error(
+            `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
+          )
+        }
 
-      if (template.root === filePath)
-        throw new Error(
-          `Duplicate import encounted in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
-        )
+        template.root = rootFilePath
+        template.lastProccessedBy = filePath
 
-      template.root = rootFilePath
-      template.lastProccessedBy = filePath
+        const templateFilePath = path.join(TEMPLATES, templateName)
+        return await compile(templateFilePath, template.content)
+      }
+    )
 
-      const templateContent = await compile(
-        path.join(TEMPLATES, templateName),
-        template.content
-      )
-
-      compiled += `\n${templateContent}`
-    }
-
-    return `${compiled}\n${fileContent}`
+    const compiledImports = await Promise.all(imports)
+    return `${compiledImports.join('\n')}\n${fileContent}`
   }
 
-  const content = await fs.readFile(path.join(directory, rootFilePath), 'utf-8')
+  const content = await fs.readFile(rootFullFilePath, 'utf-8')
   return await compile(rootFilePath, content)
 }
 
