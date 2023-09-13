@@ -28,7 +28,7 @@ const compileTemplates = async (
           )
         }
 
-        if (template.root === filePath) {
+        if (template.root === rootFilePath && template.lastProccessedBy) {
           throw new Error(
             `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
           )
