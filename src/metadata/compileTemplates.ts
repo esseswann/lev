@@ -22,17 +22,15 @@ const compileTemplates = async (
         const templateName = match[1]
         const template = templates.get(templateName)
 
-        if (!template) {
+        if (!template)
           throw new Error(
             `Template ${templateName} imported from ${filePath} does not exist.`
           )
-        }
 
-        if (template.root === rootFilePath && template.lastProccessedBy) {
+        if (template.root === rootFilePath && template.lastProccessedBy)
           throw new Error(
             `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
           )
-        }
 
         template.root = rootFilePath
         template.lastProccessedBy = filePath
