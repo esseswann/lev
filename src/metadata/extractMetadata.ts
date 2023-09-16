@@ -21,9 +21,12 @@ async function processViews(directory: string, schema: Schema) {
   const templatesPath = path.join(directory, TEMPLATES)
   const templates = await getTemplates(templatesPath)
 
-  for await (const { name, content } of iterateDirectory(viewsPath)) {
+  for await (const { name, extension, content } of iterateDirectory(
+    viewsPath
+  )) {
     checkView(name, content) // FIXME: assuming checkView doesn't have side effects
-    const compiledView = await compileTemplates(directory, name, templates)
+    const fileName = name + extension
+    const compiledView = await compileTemplates(directory, fileName, templates)
     const view = prepareView(compiledView)
 
     schema.set(`${QUERY}.${name}`, {
