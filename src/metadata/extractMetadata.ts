@@ -24,7 +24,6 @@ async function processViews(directory: string, schema: Schema) {
   for await (const { name, extension, content } of iterateDirectory(
     viewsPath
   )) {
-    checkView(name, content) // FIXME: assuming checkView doesn't have side effects
     const viewFileName = name + extension
     const view = await compileView(directory, viewFileName, templates)
 
@@ -90,13 +89,6 @@ const fromYaml = (input: string) => {
   const result = EntityConfig.decode(json)
   if (isLeft(result)) throw new Error(PathReporter.report(result).join('\n'))
   return result.right
-}
-
-const checkView = (name: string, str: string) => {
-  if (!str.includes(`$${name} `))
-    throw new Error(
-      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
-    )
 }
 
 export default processMetadata

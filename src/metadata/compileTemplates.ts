@@ -10,6 +10,7 @@ const compileView = async (
   fileName: string,
   templates: Map<string, Template>
 ) => {
+  const viewName = path.basename(fileName, path.extname(fileName))
   const viewFilePath = path.join(VIEWS, fileName)
   const viewFullFilePath = path.join(directory, viewFilePath)
 
@@ -49,7 +50,15 @@ const compileView = async (
   }
 
   const viewContent = await fs.readFile(viewFullFilePath, 'utf-8')
+  checkView(viewName, viewContent) // FIXME: assuming checkView doesn't have side effects
   return await compile(viewFilePath, viewContent)
+}
+
+const checkView = (name: string, str: string) => {
+  if (!str.includes(`$${name} `))
+    throw new Error(
+      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
+    )
 }
 
 export const prepareQuery = (str: string) => {
