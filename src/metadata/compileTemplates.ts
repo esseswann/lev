@@ -36,16 +36,30 @@ const compileTemplates = async (
         template.lastProccessedBy = filePath
 
         const templateFilePath = path.join(TEMPLATES, templateName)
-        return await compile(templateFilePath, template.content)
+        const compiledTemplate = await compile(
+          templateFilePath,
+          template.content
+        )
+        return prepareQuery(compiledTemplate)
       }
     )
 
     const compiledImports = await Promise.all(imports)
-    return `${compiledImports.join('\n')}\n${fileContent}`
+    return `${compiledImports.join('')}${prepareQuery(fileContent)}`
   }
 
   const content = await fs.readFile(viewFullFilePath, 'utf-8')
   return await compile(viewFilePath, content)
+}
+
+export const prepareQuery = (str: string) => {
+  let cleaned = str
+    .replace(/--.*/g, '') // remove single line comments
+    .replace(/\/\*[^]*?\*\//g, '') // remove multi-line comments
+    .replace(/\s{1,}/g, ' ') // minify
+    .trim()
+  if (cleaned[cleaned.length - 1] !== ';') cleaned += ';'
+  return cleaned
 }
 
 export const getTemplates = async (templatesPath: PathLike) => {

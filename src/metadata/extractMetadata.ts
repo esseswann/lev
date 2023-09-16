@@ -26,12 +26,7 @@ async function processViews(directory: string, schema: Schema) {
   )) {
     checkView(name, content) // FIXME: assuming checkView doesn't have side effects
     const viewFileName = name + extension
-    const compiledView = await compileTemplates(
-      directory,
-      viewFileName,
-      templates
-    )
-    const view = prepareView(compiledView)
+    const view = await compileTemplates(directory, viewFileName, templates)
 
     schema.set(`${QUERY}.${name}`, {
       view,
@@ -102,16 +97,6 @@ const checkView = (name: string, str: string) => {
     throw new Error(
       `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
     )
-}
-
-export const prepareView = (str: string) => {
-  let cleaned = str
-    .replace(/--.*/g, '') // remove single line comments
-    .replace(/\/\*[^]*?\*\//g, '') // remove multi-line comments
-    .replace(/\s{1,}/g, ' ') // minify
-    .trim()
-  if (cleaned[cleaned.length - 1] !== ';') cleaned += ';'
-  return cleaned
 }
 
 export default processMetadata

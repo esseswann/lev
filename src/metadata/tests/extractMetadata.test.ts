@@ -1,11 +1,11 @@
-import { prepareView } from '../extractMetadata'
+import { prepareQuery } from '../compileTemplates'
 
 describe('prepareView', () => {
   it('should append a semicolon if not present', () => {
     const input = '$foobar = select * from `foo/bar`'
     const expected = '$foobar = select * from `foo/bar`;'
-    console.log(prepareView(input))
-    expect(prepareView(input)).toBe(expected)
+    console.log(prepareQuery(input))
+    expect(prepareQuery(input)).toBe(expected)
   })
 
   it('should correctly minify a SQL view', () => {
@@ -15,6 +15,6 @@ describe('prepareView', () => {
                    /* This is a
                       multi-line comment */`
     const expected = '$foobar = select * from `foo/bar`;'
-    expect(prepareView(input)).toBe(expected)
+    expect(prepareQuery(input)).toBe(expected)
   })
 })
