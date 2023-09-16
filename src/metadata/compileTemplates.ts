@@ -7,11 +7,11 @@ const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
 
 const compileTemplates = async (
   directory: string,
-  viewName: string,
+  viewFileName: string,
   templates: Map<string, Template>
 ) => {
-  const rootFilePath = path.join(VIEWS, viewName)
-  const rootFullFilePath = path.join(directory, rootFilePath)
+  const viewFilePath = path.join(VIEWS, viewFileName)
+  const viewFullFilePath = path.join(directory, viewFilePath)
 
   const compile = async (
     filePath: string,
@@ -27,12 +27,12 @@ const compileTemplates = async (
             `Template ${templateName} imported from ${filePath} does not exist.`
           )
 
-        if (template.root === rootFilePath && template.lastProccessedBy)
+        if (template.root === viewFilePath && template.lastProccessedBy)
           throw new Error(
             `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
           )
 
-        template.root = rootFilePath
+        template.root = viewFilePath
         template.lastProccessedBy = filePath
 
         const templateFilePath = path.join(TEMPLATES, templateName)
@@ -44,8 +44,8 @@ const compileTemplates = async (
     return `${compiledImports.join('\n')}\n${fileContent}`
   }
 
-  const content = await fs.readFile(rootFullFilePath, 'utf-8')
-  return await compile(rootFilePath, content)
+  const content = await fs.readFile(viewFullFilePath, 'utf-8')
+  return await compile(viewFilePath, content)
 }
 
 export const getTemplates = async (templatesPath: PathLike) => {

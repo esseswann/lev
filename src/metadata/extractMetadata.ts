@@ -25,8 +25,12 @@ async function processViews(directory: string, schema: Schema) {
     viewsPath
   )) {
     checkView(name, content) // FIXME: assuming checkView doesn't have side effects
-    const fileName = name + extension
-    const compiledView = await compileTemplates(directory, fileName, templates)
+    const viewFileName = name + extension
+    const compiledView = await compileTemplates(
+      directory,
+      viewFileName,
+      templates
+    )
     const view = prepareView(compiledView)
 
     schema.set(`${QUERY}.${name}`, {
