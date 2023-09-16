@@ -1,14 +1,11 @@
-import { promises as fs } from 'fs'
+import { isLeft } from 'fp-ts/lib/These'
+import fs from 'fs/promises'
 import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
-
-import { isLeft } from 'fp-ts/lib/These'
 import { EntityConfig, Schema } from '.'
-
-const VIEWS = 'views'
-const CONFIGS = 'configs'
-const QUERY = 'query'
+import compileTemplates, { getTemplates } from './compileTemplates'
+import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
 
 async function processMetadata(directory: string): Promise<Schema> {
   const schema: Schema = new Map()
@@ -21,10 +18,13 @@ async function processMetadata(directory: string): Promise<Schema> {
 
 async function processViews(directory: string, schema: Schema) {
   const viewsPath = path.join(directory, VIEWS)
+  const templatesPath = path.join(directory, TEMPLATES)
+  const templates = await getTemplates(templatesPath)
 
   for await (const { name, content } of iterateDirectory(viewsPath)) {
     checkView(name, content) // FIXME: assuming checkView doesn't have side effects
-    const view = prepareView(content)
+    const compiledView = await compileTemplates(directory, name, templates)
+    const view = prepareView(compiledView)
 
     schema.set(`${QUERY}.${name}`, {
       view,
