@@ -5,12 +5,12 @@ import { TEMPLATES, VIEWS } from './constants'
 
 const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
 
-const compileTemplates = async (
+const compileView = async (
   directory: string,
-  viewFileName: string,
+  fileName: string,
   templates: Map<string, Template>
 ) => {
-  const viewFilePath = path.join(VIEWS, viewFileName)
+  const viewFilePath = path.join(VIEWS, fileName)
   const viewFullFilePath = path.join(directory, viewFilePath)
 
   const compile = async (
@@ -48,8 +48,8 @@ const compileTemplates = async (
     return `${compiledImports.join('')}${prepareQuery(fileContent)}`
   }
 
-  const content = await fs.readFile(viewFullFilePath, 'utf-8')
-  return await compile(viewFilePath, content)
+  const viewContent = await fs.readFile(viewFullFilePath, 'utf-8')
+  return await compile(viewFilePath, viewContent)
 }
 
 export const prepareQuery = (str: string) => {
@@ -97,4 +97,4 @@ type Template = {
   lastProccessedBy?: string
 }
 
-export default compileTemplates
+export default compileView
