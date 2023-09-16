@@ -1,5 +1,5 @@
 import fs from 'fs/promises'
-import { getTemplates, prepareQuery } from '../../src/metadata/compileTemplates'
+import { getTemplates, prepareQuery } from '../../src/metadata/compileView'
 
 describe('getTemplates', () => {
   beforeAll(() => {
