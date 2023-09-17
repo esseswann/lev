@@ -40,6 +40,7 @@ const compileView = async (
       const preparedTemplate = prepareQuery(compiledTemplate)
       compiled = `${compiled}${preparedTemplate}`
     }
+
     const preparedContent = prepareQuery(fileContent)
     return `${compiled}${preparedContent}`
   }
@@ -67,29 +68,24 @@ export const prepareQuery = (str: string) => {
 }
 
 export const getTemplates = async (templatesPath: PathLike) => {
-  let stats
-  try {
-    stats = await fs.stat(templatesPath)
-  } catch (err) {
-    return new Map<string, Template>()
-  }
-  if (!stats.isDirectory()) {
-    console.warn(`${templatesPath} is not a directory`)
-    return new Map<string, Template>()
-  }
-
-  const dir = await fs.opendir(templatesPath, { recursive: true })
   const templates = new Map<string, Template>()
-  for await (const dirent of dir)
-    if (dirent.isFile()) {
-      const filePath = dirent.path
-      const content = await fs.readFile(filePath, 'utf-8')
-      if (path.extname(filePath) === '.sql')
-        templates.set(path.relative(templatesPath.toString(), filePath), {
-          filePath,
-          content
-        })
-    }
+
+  try {
+    const dir = await fs.opendir(templatesPath, { recursive: true })
+    for await (const dirent of dir)
+      if (dirent.isFile()) {
+        const filePath = dirent.path
+        const content = await fs.readFile(filePath, 'utf-8')
+        if (path.extname(filePath) === '.sql')
+          templates.set(path.relative(templatesPath.toString(), filePath), {
+            filePath,
+            content
+          })
+      }
+  } catch (err) {
+    // FIXME: catch different error types
+    console.warn(err)
+  }
 
   return templates
 }
