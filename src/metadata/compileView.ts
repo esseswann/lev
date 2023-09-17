@@ -14,39 +14,34 @@ const compileView = async (
   const viewFilePath = path.join(VIEWS, fileName)
   const viewFullFilePath = path.join(directory, viewFilePath)
 
-  const compile = async (
-    filePath: string,
-    fileContent: string
-  ): Promise<string> => {
-    const imports = [...fileContent.matchAll(IMPORT_REGEX)].map(
-      async (match) => {
-        const templateName = match[1]
-        const template = templates.get(templateName)
+  const compile = async (filePath: string, fileContent: string) => {
+    let compiled: string = ''
 
-        if (!template)
-          throw new Error(
-            `Template ${templateName} imported from ${filePath} does not exist.`
-          )
+    const matches = fileContent.matchAll(IMPORT_REGEX)
+    for (const match of matches) {
+      const templateName = match[1]
+      const template = templates.get(templateName)
 
-        if (template.root === viewFilePath && template.lastProccessedBy)
-          throw new Error(
-            `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
-          )
-
-        template.root = viewFilePath
-        template.lastProccessedBy = filePath
-
-        const templateFilePath = path.join(TEMPLATES, templateName)
-        const compiledTemplate = await compile(
-          templateFilePath,
-          template.content
+      if (!template)
+        throw new Error(
+          `Template ${templateName} imported from ${filePath} does not exist.`
         )
-        return prepareQuery(compiledTemplate)
-      }
-    )
 
-    const compiledImports = await Promise.all(imports)
-    return `${compiledImports.join('')}${prepareQuery(fileContent)}`
+      if (template.root === viewFilePath && template.lastProccessedBy)
+        throw new Error(
+          `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
+        )
+
+      template.root = viewFilePath
+      template.lastProccessedBy = filePath
+
+      const templateFilePath = path.join(TEMPLATES, templateName)
+      const compiledTemplate = await compile(templateFilePath, template.content)
+      const preparedTemplate = prepareQuery(compiledTemplate)
+      compiled = `${compiled}${preparedTemplate}`
+    }
+    const preparedContent = prepareQuery(fileContent)
+    return `${compiled}${preparedContent}`
   }
 
   const viewContent = await fs.readFile(viewFullFilePath, 'utf-8')
