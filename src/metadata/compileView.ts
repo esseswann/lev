@@ -38,11 +38,12 @@ const compileView = async (
       const templateFilePath = path.join(TEMPLATES, templateName)
       const compiledTemplate = await compile(templateFilePath, template.content)
       const preparedTemplate = prepareQuery(compiledTemplate)
-      compiled = `${compiled}${preparedTemplate}`
+      compiled += preparedTemplate
     }
 
     const preparedContent = prepareQuery(fileContent)
-    return `${compiled}${preparedContent}`
+    compiled += preparedContent
+    return compiled
   }
 
   const viewContent = await fs.readFile(viewFullFilePath, 'utf-8')
