@@ -18,6 +18,7 @@ const compileView = async (
     let compiled: string = ''
 
     const matches = fileContent.matchAll(IMPORT_REGEX)
+    // NOTE: One can rewrite `for of` loop with `map` to compile templates in parallel.
     for (const match of matches) {
       const templateName = match[1]
       const template = templates.get(templateName)
