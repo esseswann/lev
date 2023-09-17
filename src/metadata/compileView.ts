@@ -75,12 +75,12 @@ export const getTemplates = async (templatesPath: PathLike) => {
     for await (const dirent of dir)
       if (dirent.isFile()) {
         const filePath = dirent.path
+        if (path.extname(filePath) !== '.sql') continue
         const content = await fs.readFile(filePath, 'utf-8')
-        if (path.extname(filePath) === '.sql')
-          templates.set(path.relative(templatesPath.toString(), filePath), {
-            filePath,
-            content
-          })
+        templates.set(path.relative(templatesPath.toString(), filePath), {
+          filePath,
+          content
+        })
       }
   } catch (err) {
     // FIXME: catch different error types
