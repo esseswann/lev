@@ -1,14 +1,11 @@
-import { promises as fs } from 'fs'
+import { isLeft } from 'fp-ts/lib/These'
+import fs from 'fs/promises'
 import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
-
-import { isLeft } from 'fp-ts/lib/These'
 import { EntityConfig, Schema } from '.'
-
-const VIEWS = 'views'
-const CONFIGS = 'configs'
-const QUERY = 'query'
+import compileView, { getTemplates } from './compileView'
+import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
 
 async function processMetadata(directory: string): Promise<Schema> {
   const schema: Schema = new Map()
@@ -21,10 +18,17 @@ async function processMetadata(directory: string): Promise<Schema> {
 
 async function processViews(directory: string, schema: Schema) {
   const viewsPath = path.join(directory, VIEWS)
+  const templatesPath = path.join(directory, TEMPLATES)
+  const templates = await getTemplates(templatesPath)
 
-  for await (const { name, content } of iterateDirectory(viewsPath)) {
-    checkView(name, content) // FIXME: assuming checkView doesn't have side effects
-    const view = prepareView(content)
+  const dir = await fs.opendir(viewsPath)
+  for await (const dirent of dir) {
+    if (!dirent.isFile()) continue
+
+    const fileName = dirent.name
+    const extension = path.extname(fileName)
+    const name = path.basename(fileName, extension)
+    const view = await compileView(directory, fileName, templates)
 
     schema.set(`${QUERY}.${name}`, {
       view,
@@ -33,6 +37,14 @@ async function processViews(directory: string, schema: Schema) {
       mapping: []
     })
   }
+
+  const unusedTemplates: string[] = []
+  for (const [name, template] of templates)
+    if (!template.lastProccessedBy) unusedTemplates.push(name)
+  if (unusedTemplates.length)
+    console.warn(
+      `The following templates are not used: ${unusedTemplates.join(', ')}`
+    )
 }
 
 async function processConfigs(directory: string, schema: Schema) {
@@ -80,23 +92,6 @@ const fromYaml = (input: string) => {
   const result = EntityConfig.decode(json)
   if (isLeft(result)) throw new Error(PathReporter.report(result).join('\n'))
   return result.right
-}
-
-const checkView = (name: string, str: string) => {
-  if (!str.includes(`$${name} `))
-    throw new Error(
-      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
-    )
-}
-
-export const prepareView = (str: string) => {
-  let cleaned = str
-    .replace(/--.*/g, '') // remove single line comments
-    .replace(/\/\*[^]*?\*\//g, '') // remove multi-line comments
-    .replace(/\s{1,}/g, ' ') // minify
-    .trim()
-  if (cleaned[cleaned.length - 1] !== ';') cleaned += ';'
-  return cleaned
 }
 
 export default processMetadata
