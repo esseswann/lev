@@ -9,6 +9,7 @@ on:
       - publish-package
 env:
   DATABASE_NAME: ${{vars.DATABASE_NAME}}
+  NODE_ENV: development
 
 jobs:
   build:
@@ -19,6 +20,8 @@ jobs:
         with:
           node-version: 16
       - run: npm ci
+      - name: Add authorized key
+        run: echo '${{secrets.AUTHORIZED_KEY}}' > tests/authorized_key.json
       - run: npm test
 
   publish-gpr:
