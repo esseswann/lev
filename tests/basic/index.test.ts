@@ -13,9 +13,9 @@ import userData from './tables/user/data'
 const dirname = __dirname.split('/').pop()
 
 beforeAll(async () => {
-  const timeout = 10000
+  const timeout = 4500 // Should be less then Jest timeout
   await database.ready(timeout)
-  await database.tableClient.withSessionRetry(async (session) =>
+  await database.tableClient.withSession(async (session) =>
     Promise.all([
       setupTable(session, `${dirname}/user`, userTable, userData),
       setupTable(session, `${dirname}/access`, accessTable)
@@ -24,7 +24,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await database.tableClient.withSessionRetry(async (session) =>
+  await database.tableClient.withSession(async (session) =>
     Promise.all([
       session.dropTable(`${dirname}/user`),
       session.dropTable(`${dirname}/access`)
