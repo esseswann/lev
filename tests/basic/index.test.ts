@@ -26,15 +26,17 @@ beforeAll(async () => {
 afterAll(async () => {
   const database = await getDatabase()
 
-  await database.tableClient.withSession(async (session) =>
-    Promise.all([
-      session.dropTable(`${dirname}/user`),
-      session.dropTable(`${dirname}/access`)
-    ])
-  )
-  await database.schemeClient.removeDirectory(dirname!)
-
-  await database.destroy()
+  try {
+    await database.tableClient.withSession(async (session) =>
+      Promise.all([
+        session.dropTable(`${dirname}/user`),
+        session.dropTable(`${dirname}/access`)
+      ])
+    )
+    await database.schemeClient.removeDirectory(dirname!)
+  } finally {
+    await database.destroy()
+  }
 })
 
 describe('my database tests', () => {
