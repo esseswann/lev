@@ -1,7 +1,7 @@
-import { PathLike } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 import { TEMPLATES, VIEWS } from './constants'
+import { Template } from './getTemplates'
 
 const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
 
@@ -67,36 +67,6 @@ export const prepareQuery = (str: string) => {
     .trim()
   if (cleaned[cleaned.length - 1] !== ';') cleaned += ';'
   return cleaned
-}
-
-export const getTemplates = async (templatesPath: PathLike) => {
-  const templates = new Map<string, Template>()
-
-  try {
-    const dir = await fs.opendir(templatesPath, { recursive: true })
-    for await (const dirent of dir)
-      if (dirent.isFile()) {
-        const filePath = dirent.path
-        if (path.extname(filePath) !== '.sql') continue
-        const content = await fs.readFile(filePath, 'utf-8')
-        templates.set(path.relative(templatesPath.toString(), filePath), {
-          filePath,
-          content
-        })
-      }
-  } catch (err) {
-    // FIXME: catch different error types
-    console.warn(err)
-  }
-
-  return templates
-}
-
-type Template = {
-  filePath: string
-  content: string
-  root?: string
-  lastProccessedBy?: string
 }
 
 export default compileView

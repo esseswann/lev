@@ -4,8 +4,9 @@ import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
 import { EntityConfig, Schema } from '.'
-import compileView, { getTemplates } from './compileView'
+import compileView from './compileView'
 import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
+import getTemplates from './getTemplates'
 
 async function processMetadata(directory: string): Promise<Schema> {
   const schema: Schema = new Map()
