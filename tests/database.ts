@@ -21,8 +21,10 @@ export const getDatabase = async () => {
   const timeout = 2000 // Should be less then Jest timeout
 
   const isReady = await driver.ready(timeout)
-  if (!isReady)
+  if (!isReady) {
+    driver.destroy()
     throw new Error(`Database has not become ready in ${timeout}ms!`)
+  }
 
   return driver
 }
