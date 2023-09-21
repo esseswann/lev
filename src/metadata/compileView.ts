@@ -28,13 +28,13 @@ const compileView = async (
           `Template ${templateName} imported from ${filePath} does not exist.`
         )
 
-      if (template.root === viewFilePath && template.lastProccessedBy)
+      if (template.root === viewFilePath && template.lastProcessedBy)
         throw new Error(
-          `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProccessedBy}.`
+          `Duplicate import encountered in ${filePath}.\nImported ${templateName} is already imported in ${template.lastProcessedBy}.`
         )
 
       template.root = viewFilePath
-      template.lastProccessedBy = filePath
+      template.lastProcessedBy = filePath
 
       const templateFilePath = path.join(TEMPLATES, templateName)
       const compiledTemplate = await compile(templateFilePath, template.content)

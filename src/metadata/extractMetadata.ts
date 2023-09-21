@@ -41,7 +41,7 @@ async function processViews(directory: string, schema: Schema) {
 
   const unusedTemplates: string[] = []
   for (const [name, template] of templates)
-    if (!template.lastProccessedBy) unusedTemplates.push(name)
+    if (!template.lastProcessedBy) unusedTemplates.push(name)
   if (unusedTemplates.length)
     console.warn(
       `The following templates are not used: ${unusedTemplates.join(', ')}`
