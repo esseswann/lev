@@ -22,14 +22,10 @@ async function processViews(directory: string, schema: Schema) {
   const templatesPath = path.join(directory, TEMPLATES)
   const templates = await getTemplates(templatesPath)
 
-  const dir = await fs.opendir(viewsPath)
-  for await (const dirent of dir) {
-    if (!dirent.isFile()) continue
-
-    const fileName = dirent.name
-    const extension = path.extname(fileName)
-    const name = path.basename(fileName, extension)
-    const view = await compileView(directory, fileName, templates)
+  for await (const { name, extension, content } of iterateDirectory(
+    viewsPath
+  )) {
+    const view = await compileView(name, content, templates)
 
     schema.set(`${QUERY}.${name}`, {
       view,
