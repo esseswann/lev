@@ -25,7 +25,7 @@ const compileView = async (
         )
 
       const lastProcessedBy = processedTemplates.get(templateName)
-      if (lastProcessedBy) {
+      if (lastProcessedBy !== undefined) {
         const msg1 = name.length
           ? `Duplicate import encountered in ${name}.`
           : `Duplicate import encountered.`
