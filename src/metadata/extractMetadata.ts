@@ -28,9 +28,8 @@ async function processViews(directory: string, schema: Schema) {
   )) {
     checkView(name, content) // FIXME: assuming checkView doesn't have side effects
     const { view, unusedTemplates: currentUnusedTemplates } = await compileView(
-      name,
-      content,
-      templates
+      templates,
+      content
     )
 
     for (const template of currentUnusedTemplates) {

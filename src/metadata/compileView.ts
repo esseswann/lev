@@ -3,9 +3,8 @@ import { Template } from './getTemplates'
 const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
 
 const compileView = async (
-  viewName: string,
-  viewContent: string,
-  templates: Map<string, Template>
+  templates: Map<string, Template>,
+  viewContent: string
 ) => {
   const processedTemplates = new Map<string, string>()
 
@@ -20,14 +19,21 @@ const compileView = async (
 
       if (!template)
         throw new Error(
-          `Template ${templateName} imported from ${name} does not exist.`
+          name.length
+            ? `Template ${templateName} imported from template ${name} does not exist.`
+            : `Imported template ${templateName} does not exist.`
         )
 
       const lastProcessedBy = processedTemplates.get(templateName)
-      if (lastProcessedBy)
-        throw new Error(
-          `Duplicate import encountered in ${name}.\nImported ${templateName} is already imported in ${lastProcessedBy}.`
-        )
+      if (lastProcessedBy) {
+        const msg1 = name.length
+          ? `Duplicate import encountered in ${name}.`
+          : `Duplicate import encountered.`
+        const msg2 = lastProcessedBy.length
+          ? `Imported ${templateName} is already imported in ${lastProcessedBy}.`
+          : `Imported ${templateName} is already imported.`
+        throw new Error(`${msg1}\n${msg2}`)
+      }
 
       processedTemplates.set(templateName, name)
 
@@ -42,7 +48,7 @@ const compileView = async (
     return compiled
   }
 
-  const view = await compile(viewName, viewContent)
+  const view = await compile('', viewContent)
   const unusedTemplates = new Set<string>()
   for (const key of templates.keys()) {
     if (!processedTemplates.has(key)) {
