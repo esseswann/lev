@@ -27,21 +27,24 @@ async function processViews(directory: string, schema: Schema) {
     viewsPath
   )) {
     checkView(name, content) // FIXME: assuming checkView doesn't have side effects
-    const { view, unusedTemplates: currentUnusedTemplates } = await compileView(
-      templates,
-      content
-    )
 
-    for (const template of currentUnusedTemplates) {
-      unusedTemplates.add(template)
+    try {
+      const { view, unusedTemplates: currentUnusedTemplates } =
+        await compileView(templates, content)
+
+      for (const template of currentUnusedTemplates) {
+        unusedTemplates.add(template)
+      }
+
+      schema.set(`${QUERY}.${name}`, {
+        view,
+        name,
+        cardinality: 'many',
+        mapping: []
+      })
+    } catch (err) {
+      throw new Error(`View ${name}: ${(err as Error).message}`)
     }
-
-    schema.set(`${QUERY}.${name}`, {
-      view,
-      name,
-      cardinality: 'many',
-      mapping: []
-    })
   }
 
   if (unusedTemplates.size)
