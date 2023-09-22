@@ -39,15 +39,7 @@ const compileView = async (
     return compiled
   }
 
-  checkView(viewName, viewContent) // FIXME: assuming checkView doesn't have side effects
   return await compile(viewName, viewContent)
-}
-
-const checkView = (name: string, str: string) => {
-  if (!str.includes(`$${name} `))
-    throw new Error(
-      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
-    )
 }
 
 export const prepareQuery = (str: string) => {

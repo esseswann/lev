@@ -25,6 +25,7 @@ async function processViews(directory: string, schema: Schema) {
   for await (const { name, extension, content } of iterateDirectory(
     viewsPath
   )) {
+    checkView(name, content) // FIXME: assuming checkView doesn't have side effects
     const view = await compileView(name, content, templates)
 
     schema.set(`${QUERY}.${name}`, {
@@ -41,6 +42,13 @@ async function processViews(directory: string, schema: Schema) {
   if (unusedTemplates.length)
     console.warn(
       `The following templates are not used: ${unusedTemplates.join(', ')}`
+    )
+}
+
+const checkView = (name: string, str: string) => {
+  if (!str.includes(`$${name} `))
+    throw new Error(
+      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
     )
 }
 
