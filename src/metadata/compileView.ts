@@ -7,6 +7,8 @@ const compileView = async (
   viewContent: string,
   templates: Map<string, Template>
 ) => {
+  const processedTemplates = new Map<string, string>()
+
   const compile = async (name: string, str: string) => {
     let compiled: string = ''
 
@@ -21,13 +23,14 @@ const compileView = async (
           `Template ${templateName} imported from ${name} does not exist.`
         )
 
-      if (template.root === viewName && template.lastProcessedBy)
+      const lastProcessedBy = processedTemplates.get(templateName)
+      if (template.root === viewName && lastProcessedBy)
         throw new Error(
-          `Duplicate import encountered in ${name}.\nImported ${templateName} is already imported in ${template.lastProcessedBy}.`
+          `Duplicate import encountered in ${name}.\nImported ${templateName} is already imported in ${lastProcessedBy}.`
         )
 
+      processedTemplates.set(templateName, name)
       template.root = viewName
-      template.lastProcessedBy = name
 
       const compiledTemplate = await compile(templateName, template.content)
       const preparedTemplate = prepareQuery(compiledTemplate)
@@ -39,7 +42,14 @@ const compileView = async (
     return compiled
   }
 
-  return await compile(viewName, viewContent)
+  const view = await compile(viewName, viewContent)
+  const unusedTemplates = new Set<string>()
+  for (const key of templates.keys()) {
+    if (!processedTemplates.has(key)) {
+      unusedTemplates.add(key)
+    }
+  }
+  return { view, unusedTemplates }
 }
 
 export const prepareQuery = (str: string) => {

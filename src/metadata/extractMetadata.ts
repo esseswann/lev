@@ -22,11 +22,20 @@ async function processViews(directory: string, schema: Schema) {
   const templatesPath = path.join(directory, TEMPLATES)
   const templates = await getTemplates(templatesPath)
 
+  const unusedTemplates = new Set<string>()
   for await (const { name, extension, content } of iterateDirectory(
     viewsPath
   )) {
     checkView(name, content) // FIXME: assuming checkView doesn't have side effects
-    const view = await compileView(name, content, templates)
+    const { view, unusedTemplates: currentUnusedTemplates } = await compileView(
+      name,
+      content,
+      templates
+    )
+
+    for (const template of currentUnusedTemplates) {
+      unusedTemplates.add(template)
+    }
 
     schema.set(`${QUERY}.${name}`, {
       view,
@@ -36,12 +45,9 @@ async function processViews(directory: string, schema: Schema) {
     })
   }
 
-  const unusedTemplates: string[] = []
-  for (const [name, template] of templates)
-    if (!template.lastProcessedBy) unusedTemplates.push(name)
-  if (unusedTemplates.length)
+  if (unusedTemplates.size)
     console.warn(
-      `The following templates are not used: ${unusedTemplates.join(', ')}`
+      `The following templates are not used: ${[...unusedTemplates].join(', ')}`
     )
 }
 

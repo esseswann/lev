@@ -32,7 +32,6 @@ export type Template = {
   filePath: string
   content: string
   root?: string
-  lastProcessedBy?: string
 }
 
 export default getTemplates
