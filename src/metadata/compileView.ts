@@ -8,7 +8,7 @@ const compileView = async (
 ) => {
   const processedTemplates = new Map<string, string>()
 
-  const compile = async (name: string, str: string) => {
+  const compile = (name: string, str: string) => {
     let compiled: string = ''
     const matches = str.matchAll(IMPORT_REGEX)
 
@@ -37,7 +37,7 @@ const compileView = async (
 
       processedTemplates.set(templateName, name)
 
-      const compiledTemplate = await compile(templateName, template.content)
+      const compiledTemplate = compile(templateName, template.content)
       const preparedTemplate = prepareQuery(compiledTemplate)
       compiled += preparedTemplate
     }
