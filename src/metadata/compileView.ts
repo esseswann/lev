@@ -11,8 +11,8 @@ const compileView = async (
 
   const compile = async (name: string, str: string) => {
     let compiled: string = ''
-
     const matches = str.matchAll(IMPORT_REGEX)
+
     // NOTE: One can rewrite `for of` loop with `map` to compile templates in parallel.
     for (const match of matches) {
       const templateName = match[1]
@@ -24,13 +24,12 @@ const compileView = async (
         )
 
       const lastProcessedBy = processedTemplates.get(templateName)
-      if (template.root === viewName && lastProcessedBy)
+      if (lastProcessedBy)
         throw new Error(
           `Duplicate import encountered in ${name}.\nImported ${templateName} is already imported in ${lastProcessedBy}.`
         )
 
       processedTemplates.set(templateName, name)
-      template.root = viewName
 
       const compiledTemplate = await compile(templateName, template.content)
       const preparedTemplate = prepareQuery(compiledTemplate)
@@ -39,6 +38,7 @@ const compileView = async (
 
     const preparedContent = prepareQuery(str)
     compiled += preparedContent
+
     return compiled
   }
 

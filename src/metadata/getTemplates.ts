@@ -31,7 +31,6 @@ const getTemplates = async (templatesPath: PathLike) => {
 export type Template = {
   filePath: string
   content: string
-  root?: string
 }
 
 export default getTemplates
