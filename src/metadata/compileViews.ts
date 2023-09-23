@@ -1,12 +1,7 @@
-import { Dirent, PathLike } from 'fs'
+import { PathLike } from 'fs'
 import fs from 'fs/promises'
-import { compileTemplate, compileTemplates } from './compileTemplates'
-import {
-  Template,
-  getTemplate,
-  getTemplates,
-  resetTemplates
-} from './getTemplates'
+import { compileTemplate } from './compileTemplates'
+import { getTemplate, getTemplates, resetTemplates } from './getTemplates'
 
 export async function* compileViews(
   viewsPath: PathLike,
