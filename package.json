@@ -18,7 +18,8 @@
   "types": "./lib/index.d.ts",
   "scripts": {
     "build": "rm -rf lib && tsc",
-    "test": "jest"
+    "test": "jest",
+    "dev": "jest --watch"
   },
   "prettier": {
     "tabWidth": 2,

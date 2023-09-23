@@ -21,16 +21,30 @@ const getTemplates = async (templatesPath: PathLike) => {
       const content = await fs.readFile(filePath, 'utf-8')
       templates.set(path.relative(templatesPath.toString(), filePath), {
         filePath,
-        content
+        content,
+        processedByPath: new Set()
       })
     }
 
   return templates
 }
 
+export const resetTemplates = (templates: Templates) => {
+  const unusedTemplates = []
+  for (const [name, template] of templates.entries()) {
+    if (template.processedByPath.size) unusedTemplates.push(name)
+    template.processedByPath = new Set()
+    templates.set(name, template)
+  }
+  return unusedTemplates
+}
+
 export type Template = {
   filePath: string
   content: string
+  processedByPath: Set<string>
 }
+
+export type Templates = Map<string, Template>
 
 export default getTemplates

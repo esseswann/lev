@@ -1,3 +1,4 @@
+import cleanQuery from './cleanQuery'
 import { Template } from './getTemplates'
 
 const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
@@ -38,11 +39,11 @@ const compileView = async (
       processedTemplates.set(templateName, name)
 
       const compiledTemplate = compile(templateName, template.content)
-      const preparedTemplate = prepareQuery(compiledTemplate)
+      const preparedTemplate = cleanQuery(compiledTemplate)
       compiled += preparedTemplate
     }
 
-    const preparedContent = prepareQuery(str)
+    const preparedContent = cleanQuery(str)
     compiled += preparedContent
 
     return compiled
@@ -56,16 +57,6 @@ const compileView = async (
     }
   }
   return { view, unusedTemplates }
-}
-
-export const prepareQuery = (str: string) => {
-  let cleaned = str
-    .replace(/--.*/g, '') // remove single line comments
-    .replace(/\/\*[^]*?\*\//g, '') // remove multi-line comments
-    .replace(/\s{1,}/g, ' ') // minify
-    .trim()
-  if (cleaned[cleaned.length - 1] !== ';') cleaned += ';'
-  return cleaned
 }
 
 export default compileView
