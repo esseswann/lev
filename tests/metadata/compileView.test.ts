@@ -2,7 +2,9 @@ import { join } from 'path'
 import cleanQuery from '../../src/metadata/cleanQuery'
 import { compileViews } from '../../src/metadata/compileViews'
 
-describe('cleanQuery', () => {
+describe('compile view', () => {
+  jest.spyOn(console, 'warn').mockImplementation()
+
   it('appends a semicolon if not present', () => {
     const input = '$foobar = select * from `foo/bar`'
     const expected = '$foobar = select * from `foo/bar`;'
@@ -41,6 +43,19 @@ describe('cleanQuery', () => {
   it('warns about unused templates', async () => {
     global.console = { ...global.console, warn: jest.fn() }
     for await (const view of compileViews(viewsPath, templatesPath)) view
-    expect(console.warn).toBeCalled()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('The following templates were unused: unused.sql')
+    )
+  })
+
+  it('warns about already imported', async () => {
+    const viewsPath = join(__dirname, 'doubleTemplates/views')
+    const templatesPath = join(__dirname, 'doubleTemplates/templates')
+    for await (const view of compileViews(viewsPath, templatesPath)) view
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'role.sql has already been imported in view.sql/role.sql, skipping'
+      )
+    )
   })
 })

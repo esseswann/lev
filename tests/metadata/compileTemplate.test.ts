@@ -1,6 +1,9 @@
 import { join } from 'path'
-import { compileTemplates } from '../../src/metadata/compileTemplates'
-import getTemplates from '../../src/metadata/getTemplates'
+import {
+  compileTemplate,
+  compileTemplates
+} from '../../src/metadata/compileTemplates'
+import { getTemplates } from '../../src/metadata/getTemplates'
 
 describe('compile template', () => {
   const base = __dirname
@@ -8,23 +11,16 @@ describe('compile template', () => {
   it('should compile template', async () => {
     const path = join(base, 'basicTemplates/templates')
     const templates = await getTemplates(path)
-    const template = templates.get('role.sql')!
-    template.processedByPath.add('root')
-    const result = compileTemplates(templates, template)
-    templates.forEach(({ filePath, processedByPath }) =>
-      console.log(filePath, processedByPath.size)
-    )
+    const result = compileTemplate(templates, new Set(['root']), 'role.sql')
     expect(result).toContain('connectionId') // FIXME
   })
 
   it('should throw recursive exception', async () => {
     const path = join(base, 'recursiveTemplates/templates')
     const templates = await getTemplates(path)
-    const template = templates.get('role.sql')!
-    template.processedByPath.add('root')
-    const t = () => compileTemplates(templates, template)
+    const t = () => compileTemplate(templates, new Set(), 'role.sql')
     expect(t).toThrow(
-      'Template connection.sql has already been imported in path connection.sql'
+      'Recursion detected for role.sql in connection.sql/role.sql'
     )
   })
 })

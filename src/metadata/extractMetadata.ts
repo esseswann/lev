@@ -4,7 +4,7 @@ import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
 import { EntityConfig, Schema } from '.'
-import compileView from './compileViews'
+import compileView, { compileViews } from './compileViews'
 import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
 import getTemplates from './getTemplates'
 
@@ -20,9 +20,11 @@ async function processMetadata(directory: string): Promise<Schema> {
 async function processViews(directory: string, schema: Schema) {
   const viewsPath = path.join(directory, VIEWS)
   const templatesPath = path.join(directory, TEMPLATES)
-  const templates = await getTemplates(templatesPath)
 
-  const unusedTemplates = new Set<string>()
+  for await (const view of compileViews(viewsPath, templatesPath)) {
+    checkView('kek', view)
+  }
+
   for await (const { name, extension, content } of iterateDirectory(
     viewsPath
   )) {

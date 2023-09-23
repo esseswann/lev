@@ -4,16 +4,7 @@ import path from 'path'
 
 export const getTemplates = async (templatesPath: PathLike) => {
   const templates = new Map<string, Template>()
-
-  let dir: Dir
-
-  try {
-    dir = await fs.opendir(templatesPath, { recursive: true })
-  } catch (e) {
-    console.warn(`No directory found at ${templatesPath}`)
-    return templates
-  }
-
+  const dir = await fs.opendir(templatesPath, { recursive: true })
   for await (const dirent of dir)
     if (dirent.isFile()) {
       const filePath = dirent.path
@@ -22,7 +13,7 @@ export const getTemplates = async (templatesPath: PathLike) => {
       templates.set(path.relative(templatesPath.toString(), filePath), {
         filePath,
         content,
-        processedByPath: new Set()
+        processedByPath: ''
       })
     }
 
@@ -32,9 +23,9 @@ export const getTemplates = async (templatesPath: PathLike) => {
 export const resetTemplates = (templates: Templates) => {
   const unusedTemplates = []
   for (const [name, template] of templates.entries()) {
-    if (template.processedByPath.size === 0) unusedTemplates.push(name)
+    if (!template.processedByPath.length) unusedTemplates.push(name)
     else {
-      template.processedByPath = new Set()
+      template.processedByPath = ''
       templates.set(name, template)
     }
   }
@@ -44,7 +35,7 @@ export const resetTemplates = (templates: Templates) => {
 export type Template = {
   filePath: string
   content: string
-  processedByPath: Set<string>
+  processedByPath: string
 }
 
 export type Templates = Map<string, Template>

@@ -1,0 +1,1 @@
+declare $role as Utf8;

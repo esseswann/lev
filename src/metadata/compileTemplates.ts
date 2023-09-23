@@ -3,23 +3,37 @@ import { Template, Templates } from './getTemplates'
 
 const IMPORT_REGEX = /--\s*import\s+(\S+\.sql)/g
 
-export const compileTemplates = (templates: Templates, template: Template) => {
+export const compileTemplates = (
+  templates: Templates,
+  path: Set<string>,
+  template: Template
+) => {
   const matches = template.content.matchAll(IMPORT_REGEX)
   let result = ''
-  for (const match of matches) result += compileTemplate(templates, match[1])
+  for (const match of matches)
+    result += compileTemplate(templates, new Set(path), match[1])
   return result + cleanQuery(template.content)
 }
 
-export const compileTemplate = (templates: Templates, name: string): string => {
+export const compileTemplate = (
+  templates: Templates,
+  path: Set<string>,
+  name: string
+): string => {
   const template = templates.get(name)
   if (!template) throw new Error(`Template ${name} does not exist`)
-  const processedPath = template.processedByPath
-  if (processedPath.has(name))
-    throw new Error(
-      `Template ${name} has already been imported in path ${[
-        ...processedPath.values()
-      ].join('')}`
+  if (path.has(name))
+    throw new Error(`Recursion detected for ${name} in ${getPath(path)}`)
+  path.add(name)
+  if (template.processedByPath.length) {
+    console.warn(
+      `${name} has already been imported in ${template.processedByPath}, skipping`
     )
-  processedPath.add(name)
-  return compileTemplates(templates, template)
+    return ''
+  } else {
+    template.processedByPath = getPath(path)
+  }
+  return compileTemplates(templates, path, template)
 }
+
+const getPath = (path: Set<string>) => [...path.values()].join('/')

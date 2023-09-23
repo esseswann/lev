@@ -1,12 +1,7 @@
-import { PathLike } from 'fs'
-import { compileTemplates } from './compileTemplates'
-import {
-  getTemplates,
-  Template,
-  Templates,
-  resetTemplates
-} from './getTemplates'
+import { Dirent, PathLike } from 'fs'
 import fs from 'fs/promises'
+import { compileTemplate, compileTemplates } from './compileTemplates'
+import { Template, getTemplates, resetTemplates } from './getTemplates'
 
 export async function* compileViews(
   viewsPath: PathLike,
@@ -18,10 +13,13 @@ export async function* compileViews(
   const unusedTemplates = []
   const views = await fs.opendir(viewsPath)
   for await (const view of views) {
-    const filePath = view.path
-    const content = await fs.readFile(filePath, 'utf-8')
-    yield compileView(templates, { filePath, content })
+    const name = view.name
+    const templateLikeView = await getTemplateLikeView(view)
+    templates.set(name, templateLikeView)
+    const result = compileTemplate(templates, new Set(), name)
+    templates.delete(name)
     unusedTemplates.push(...resetTemplates(templates))
+    yield result
   }
   if (unusedTemplates.length) {
     const set = new Set(unusedTemplates)
@@ -29,14 +27,8 @@ export async function* compileViews(
   }
 }
 
-export const compileView = (
-  templates: Templates,
-  view: Omit<Template, 'processedByPath'>
-) => {
-  const viewLikeTemplate: Template = {
-    ...view,
-    processedByPath: new Set([view.filePath])
-  }
-  const compiledView = compileTemplates(templates, viewLikeTemplate)
-  return compiledView
+const getTemplateLikeView = async (dirent: Dirent): Promise<Template> => {
+  const filePath = dirent.path
+  const content = await fs.readFile(filePath, 'utf-8')
+  return { filePath, content, processedByPath: '' }
 }
