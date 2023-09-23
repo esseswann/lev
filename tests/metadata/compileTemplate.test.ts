@@ -17,7 +17,7 @@ describe('compile template', () => {
     const templates = await getTemplates(path)
     const t = () => compileTemplate(templates, new Set(), 'role.sql')
     expect(t).toThrow(
-      'Recursion detected for role.sql in connection.sql/role.sql'
+      'Recursion detected for role.sql in role.sql/connection.sql'
     )
   })
 })
