@@ -40,9 +40,7 @@ describe('cleanQuery', () => {
 
   it('warns about unused templates', async () => {
     global.console = { ...global.console, warn: jest.fn() }
-    for await (const view of compileViews(viewsPath, templatesPath)) {
-      console.log(view)
-    }
+    for await (const view of compileViews(viewsPath, templatesPath)) view
     expect(console.warn).toBeCalled()
   })
 })
