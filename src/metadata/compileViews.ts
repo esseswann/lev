@@ -23,8 +23,10 @@ export async function* compileViews(
     yield compileView(templates, { filePath, content })
     unusedTemplates.push(...resetTemplates(templates))
   }
-  const set = new Set(unusedTemplates)
-  console.warn(`The following templates were unused: ${[...set]}`)
+  if (unusedTemplates.length) {
+    const set = new Set(unusedTemplates)
+    console.warn(`The following templates were unused: ${[...set]}`)
+  }
 }
 
 export const compileView = (
