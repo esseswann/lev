@@ -51,7 +51,7 @@ describe('cleanQuery', () => {
       unusedTemplates.push(...resetTemplates(templates))
     }
     const set = new Set(unusedTemplates)
-    console.warn(`The following templates were: unsed ${[...set]}`)
+    console.warn(`The following templates were unused: ${[...set]}`)
     expect(set).toEqual(new Set(['unused.sql']))
   })
 })
