@@ -1,5 +1,5 @@
 import cleanQuery from './cleanQuery'
-import { Template } from './getTemplates'
+import { Template, Templates } from './getTemplates'
 
 const IMPORT_REGEX = /--\s*import\s+(\S+\.sql)/g
 
@@ -23,5 +23,3 @@ export const compileTemplate = (templates: Templates, name: string): string => {
   processedPath.add(name)
   return compileTemplates(templates, template)
 }
-
-export type Templates = Map<string, Template>

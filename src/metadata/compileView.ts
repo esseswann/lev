@@ -1,62 +1,16 @@
-import cleanQuery from './cleanQuery'
-import { Template } from './getTemplates'
+import { compileTemplates } from './compileTemplates'
+import { Template, Templates } from './getTemplates'
 
-const IMPORT_REGEX = /--\s*#import\s+(\S+\.sql)/g
-
-const compileView = async (
-  templates: Map<string, Template>,
-  viewContent: string
+const compileView = (
+  templates: Templates,
+  view: Omit<Template, 'processedByPath'>
 ) => {
-  const processedTemplates = new Map<string, string>()
-
-  const compile = (name: string, str: string) => {
-    let compiled: string = ''
-    const matches = str.matchAll(IMPORT_REGEX)
-
-    // NOTE: One can rewrite `for of` loop with `map` to compile templates in parallel.
-    for (const match of matches) {
-      const templateName = match[1]
-      const template = templates.get(templateName)
-
-      if (!template)
-        throw new Error(
-          name.length
-            ? `Template ${templateName} imported from template ${name} does not exist.`
-            : `Imported template ${templateName} does not exist.`
-        )
-
-      const lastProcessedBy = processedTemplates.get(templateName)
-      if (lastProcessedBy !== undefined) {
-        const msg1 = name.length
-          ? `Duplicate import encountered in ${name}.`
-          : `Duplicate import encountered.`
-        const msg2 = lastProcessedBy.length
-          ? `Imported ${templateName} is already imported in ${lastProcessedBy}.`
-          : `Imported ${templateName} is already imported.`
-        throw new Error(`${msg1}\n${msg2}`)
-      }
-
-      processedTemplates.set(templateName, name)
-
-      const compiledTemplate = compile(templateName, template.content)
-      const preparedTemplate = cleanQuery(compiledTemplate)
-      compiled += preparedTemplate
-    }
-
-    const preparedContent = cleanQuery(str)
-    compiled += preparedContent
-
-    return compiled
+  const viewLikeTemplate: Template = {
+    ...view,
+    processedByPath: new Set([view.filePath])
   }
-
-  const view = await compile('', viewContent)
-  const unusedTemplates = new Set<string>()
-  for (const key of templates.keys()) {
-    if (!processedTemplates.has(key)) {
-      unusedTemplates.add(key)
-    }
-  }
-  return { view, unusedTemplates }
+  const compiledView = compileTemplates(templates, viewLikeTemplate)
+  return compiledView
 }
 
 export default compileView

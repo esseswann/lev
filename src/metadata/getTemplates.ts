@@ -32,9 +32,11 @@ const getTemplates = async (templatesPath: PathLike) => {
 export const resetTemplates = (templates: Templates) => {
   const unusedTemplates = []
   for (const [name, template] of templates.entries()) {
-    if (template.processedByPath.size) unusedTemplates.push(name)
-    template.processedByPath = new Set()
-    templates.set(name, template)
+    if (template.processedByPath.size === 0) unusedTemplates.push(name)
+    else {
+      template.processedByPath = new Set()
+      templates.set(name, template)
+    }
   }
   return unusedTemplates
 }
