@@ -1,4 +1,4 @@
-import { PathLike } from 'fs'
+import { Dirent, PathLike } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 
@@ -9,12 +9,8 @@ export const getTemplates = async (templatesPath: PathLike) => {
     if (dirent.isFile()) {
       const filePath = dirent.path
       if (path.extname(filePath) !== '.sql') continue
-      const content = await fs.readFile(filePath, 'utf-8')
-      templates.set(path.relative(templatesPath.toString(), filePath), {
-        filePath,
-        content,
-        processedByPath: ''
-      })
+      const template = await getTemplate(dirent)
+      templates.set(path.relative(templatesPath.toString(), filePath), template)
     }
 
   return templates
@@ -36,6 +32,12 @@ export type Template = {
   filePath: string
   content: string
   processedByPath: string
+}
+
+export const getTemplate = async (dirent: Dirent): Promise<Template> => {
+  const filePath = dirent.path
+  const content = await fs.readFile(filePath, 'utf-8')
+  return { filePath, content, processedByPath: '' }
 }
 
 export type Templates = Map<string, Template>

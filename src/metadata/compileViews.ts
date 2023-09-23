@@ -1,7 +1,12 @@
 import { Dirent, PathLike } from 'fs'
 import fs from 'fs/promises'
 import { compileTemplate, compileTemplates } from './compileTemplates'
-import { Template, getTemplates, resetTemplates } from './getTemplates'
+import {
+  Template,
+  getTemplate,
+  getTemplates,
+  resetTemplates
+} from './getTemplates'
 
 export async function* compileViews(
   viewsPath: PathLike,
@@ -11,10 +16,10 @@ export async function* compileViews(
     ? await getTemplates(templatesPath)
     : new Map()
   const unusedTemplates = []
-  const views = await fs.opendir(viewsPath)
-  for await (const view of views) {
-    const name = view.name
-    const templateLikeView = await getTemplateLikeView(view)
+  const dir = await fs.opendir(viewsPath)
+  for await (const dirent of dir) {
+    const name = dirent.name
+    const templateLikeView = await getTemplate(dirent)
     templates.set(name, templateLikeView)
     const result = compileTemplate(templates, new Set(), name)
     templates.delete(name)
@@ -25,10 +30,4 @@ export async function* compileViews(
     const set = new Set(unusedTemplates)
     console.warn(`The following templates were unused: ${[...set]}`)
   }
-}
-
-const getTemplateLikeView = async (dirent: Dirent): Promise<Template> => {
-  const filePath = dirent.path
-  const content = await fs.readFile(filePath, 'utf-8')
-  return { filePath, content, processedByPath: '' }
 }
