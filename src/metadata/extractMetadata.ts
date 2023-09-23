@@ -4,7 +4,7 @@ import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
 import { EntityConfig, Schema } from '.'
-import compileView from './compileView'
+import compileView from './compileViews'
 import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
 import getTemplates from './getTemplates'
 

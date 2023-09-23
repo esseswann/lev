@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import { join } from 'path'
 import cleanQuery from '../../src/metadata/cleanQuery'
-import compileView from '../../src/metadata/compileView'
-import getTemplates, { resetTemplates } from '../../src/metadata/getTemplates'
+import { compileViews } from '../../src/metadata/compileViews'
+import { resetTemplates, getTemplates } from '../../src/metadata/getTemplates'
 
 describe('cleanQuery', () => {
   it('appends a semicolon if not present', () => {
@@ -31,27 +31,20 @@ describe('cleanQuery', () => {
   const templatesPath = join(__dirname, 'basicTemplates/templates')
 
   it('compiles views', async () => {
-    const templates = await getTemplates(templatesPath)
-    const views = await fs.opendir(viewsPath)
-    for await (const view of views) {
-      const filePath = view.path
-      const content = await fs.readFile(filePath, 'utf-8')
-      compileView(templates, { filePath, content })
-    }
+    const views: string[] = []
+    for await (const view of compileViews(viewsPath, templatesPath))
+      views.push(view)
+    const targetViews = [
+      'declare $connectionId as Utf8;declare $role as Utf8;select $role;'
+    ]
+    expect(views).toEqual(targetViews)
   })
 
   it('warns about unused templates', async () => {
-    const templates = await getTemplates(templatesPath)
-    const views = await fs.opendir(viewsPath)
-    const unusedTemplates = []
-    for await (const view of views) {
-      const filePath = view.path
-      const content = await fs.readFile(filePath, 'utf-8')
-      compileView(templates, { filePath, content })
-      unusedTemplates.push(...resetTemplates(templates))
+    global.console = { ...global.console, warn: jest.fn() }
+    for await (const view of compileViews(viewsPath, templatesPath)) {
+      console.log(view)
     }
-    const set = new Set(unusedTemplates)
-    console.warn(`The following templates were unused: ${[...set]}`)
-    expect(set).toEqual(new Set(['unused.sql']))
+    expect(console.warn).toBeCalled()
   })
 })

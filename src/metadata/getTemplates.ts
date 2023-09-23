@@ -2,7 +2,7 @@ import { Dir, PathLike } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 
-const getTemplates = async (templatesPath: PathLike) => {
+export const getTemplates = async (templatesPath: PathLike) => {
   const templates = new Map<string, Template>()
 
   let dir: Dir
@@ -48,5 +48,3 @@ export type Template = {
 }
 
 export type Templates = Map<string, Template>
-
-export default getTemplates
