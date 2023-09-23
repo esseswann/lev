@@ -1,15 +1,25 @@
 import { PathLike } from 'fs'
 import fs from 'fs/promises'
 import { compileTemplate } from './compileTemplates'
-import { getTemplate, getTemplates, resetTemplates } from './getTemplates'
+import {
+  Template,
+  Templates,
+  getTemplate,
+  getTemplates,
+  resetTemplates
+} from './getTemplates'
 
 export async function* compileViews(
   viewsPath: PathLike,
   templatesPath?: PathLike
 ) {
-  const templates = templatesPath
-    ? await getTemplates(templatesPath)
-    : new Map()
+  let templates: Templates = new Map<string, Template>()
+  if (templatesPath)
+    try {
+      templates = await getTemplates(templatesPath)
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err
+    }
   const unusedTemplates = []
   const dir = await fs.opendir(viewsPath)
   for await (const dirent of dir) {
