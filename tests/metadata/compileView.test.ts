@@ -32,8 +32,8 @@ describe('compile view', () => {
 
   it('compiles views', async () => {
     const views: string[] = []
-    for await (const view of compileViews(viewsPath, templatesPath))
-      views.push(view)
+    for await (const { result } of compileViews(viewsPath, templatesPath))
+      views.push(result)
     const targetViews = [
       'declare $connectionId as Utf8;declare $role as Utf8;select $role;'
     ]
