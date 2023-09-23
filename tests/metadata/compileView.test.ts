@@ -1,8 +1,6 @@
-import fs from 'fs/promises'
 import { join } from 'path'
 import cleanQuery from '../../src/metadata/cleanQuery'
 import { compileViews } from '../../src/metadata/compileViews'
-import { resetTemplates, getTemplates } from '../../src/metadata/getTemplates'
 
 describe('cleanQuery', () => {
   it('appends a semicolon if not present', () => {
