@@ -4,9 +4,8 @@ import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
 import { EntityConfig, Schema } from '.'
-import compileView, { compileViews } from './compileViews'
+import { compileViews } from './compileViews'
 import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
-import getTemplates from './getTemplates'
 
 async function processMetadata(directory: string): Promise<Schema> {
   const schema: Schema = new Map()
@@ -21,44 +20,28 @@ async function processViews(directory: string, schema: Schema) {
   const viewsPath = path.join(directory, VIEWS)
   const templatesPath = path.join(directory, TEMPLATES)
 
-  for await (const view of compileViews(viewsPath, templatesPath)) {
-    checkView('kek', view)
-  }
-
-  for await (const { name, extension, content } of iterateDirectory(
-    viewsPath
+  for await (const { name, result: view } of compileViews(
+    viewsPath,
+    templatesPath
   )) {
-    checkView(name, content) // FIXME: assuming checkView doesn't have side effects
+    checkView(name, view) // FIXME: assuming checkView doesn't have side effects
 
-    try {
-      const { view, unusedTemplates: currentUnusedTemplates } =
-        await compileView(templates, content)
-
-      for (const template of currentUnusedTemplates) {
-        unusedTemplates.add(template)
-      }
-
-      schema.set(`${QUERY}.${name}`, {
-        view,
-        name,
-        cardinality: 'many',
-        mapping: []
-      })
-    } catch (err) {
-      throw new Error(`View ${name}: ${(err as Error).message}`)
-    }
+    schema.set(`${QUERY}.${name}`, {
+      view,
+      name,
+      cardinality: 'many',
+      mapping: []
+    })
   }
-
-  if (unusedTemplates.size)
-    console.warn(
-      `The following templates are not used: ${[...unusedTemplates].join(', ')}`
-    )
 }
 
 const checkView = (name: string, str: string) => {
-  if (!str.includes(`$${name} `))
+  const extension = path.extname(name)
+  const baseName = path.basename(name, extension)
+
+  if (!str.includes(`$${baseName} `))
     throw new Error(
-      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
+      `View ${name} should contain select expression assigned to $${baseName} so that target result set is distinguished from other expressions`
     )
 }
 
