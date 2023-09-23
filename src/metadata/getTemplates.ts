@@ -1,4 +1,4 @@
-import { Dir, PathLike } from 'fs'
+import { PathLike } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 
