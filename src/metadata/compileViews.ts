@@ -19,7 +19,7 @@ export async function* compileViews(
     const result = compileTemplate(templates, new Set(), name)
     templates.delete(name)
     unusedTemplates.push(...resetTemplates(templates))
-    yield result
+    yield { name, result }
   }
   if (unusedTemplates.length) {
     const set = new Set(unusedTemplates)
