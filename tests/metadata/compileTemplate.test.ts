@@ -1,8 +1,5 @@
 import { join } from 'path'
-import {
-  compileTemplate,
-  compileTemplates
-} from '../../src/metadata/compileTemplates'
+import { compileTemplate } from '../../src/metadata/compileTemplates'
 import { getTemplates } from '../../src/metadata/getTemplates'
 
 describe('compile template', () => {
