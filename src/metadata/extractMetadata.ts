@@ -4,9 +4,8 @@ import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
 import { EntityConfig, Schema } from '.'
-import compileView from './compileView'
+import { compileViews } from './compileViews'
 import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
-import getTemplates from './getTemplates'
 
 async function processMetadata(directory: string): Promise<Schema> {
   const schema: Schema = new Map()
@@ -20,31 +19,29 @@ async function processMetadata(directory: string): Promise<Schema> {
 async function processViews(directory: string, schema: Schema) {
   const viewsPath = path.join(directory, VIEWS)
   const templatesPath = path.join(directory, TEMPLATES)
-  const templates = await getTemplates(templatesPath)
 
-  const dir = await fs.opendir(viewsPath)
-  for await (const dirent of dir) {
-    if (!dirent.isFile()) continue
+  for await (const { name, result: view } of compileViews(
+    viewsPath,
+    templatesPath
+  )) {
+    const extension = path.extname(name)
+    const baseName = path.basename(name, extension)
 
-    const fileName = dirent.name
-    const extension = path.extname(fileName)
-    const name = path.basename(fileName, extension)
-    const view = await compileView(directory, fileName, templates)
+    checkView(baseName, view) // FIXME: assuming checkView doesn't have side effects
 
     schema.set(`${QUERY}.${name}`, {
       view,
-      name,
+      name: baseName,
       cardinality: 'many',
       mapping: []
     })
   }
+}
 
-  const unusedTemplates: string[] = []
-  for (const [name, template] of templates)
-    if (!template.lastProccessedBy) unusedTemplates.push(name)
-  if (unusedTemplates.length)
-    console.warn(
-      `The following templates are not used: ${unusedTemplates.join(', ')}`
+const checkView = (name: string, str: string) => {
+  if (!str.includes(`$${name} `))
+    throw new Error(
+      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
     )
 }
 
