@@ -24,11 +24,14 @@ async function processViews(directory: string, schema: Schema) {
     viewsPath,
     templatesPath
   )) {
-    checkView(name, view) // FIXME: assuming checkView doesn't have side effects
+    const extension = path.extname(name)
+    const baseName = path.basename(name, extension)
+
+    checkView(baseName, view) // FIXME: assuming checkView doesn't have side effects
 
     schema.set(`${QUERY}.${name}`, {
       view,
-      name,
+      name: baseName,
       cardinality: 'many',
       mapping: []
     })
@@ -36,12 +39,9 @@ async function processViews(directory: string, schema: Schema) {
 }
 
 const checkView = (name: string, str: string) => {
-  const extension = path.extname(name)
-  const baseName = path.basename(name, extension)
-
-  if (!str.includes(`$${baseName} `))
+  if (!str.includes(`$${name} `))
     throw new Error(
-      `View ${name} should contain select expression assigned to $${baseName} so that target result set is distinguished from other expressions`
+      `View ${name} should contain select expression assigned to $${name} so that target result set is distinguished from other expressions`
     )
 }
 
