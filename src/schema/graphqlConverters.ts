@@ -76,6 +76,7 @@ export const convertStruct = (
     const viewName = context.path[context.path.length - 1]
     const relationships = context.relationships.get(viewName)?.entries()
     if (!relationships) return result
+    // FIXME check if the field name is already present
     for (const [fieldName, relationship] of relationships) {
       const type = context.rootFields[relationship.name].type
       result[context.fieldNameCase(fieldName)] = {
