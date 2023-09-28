@@ -4,7 +4,7 @@ import path from 'path'
 import { TypedData } from 'ydb-sdk'
 import extractMetadata from '../../src/metadata/extractMetadata'
 import generateSchema from '../../src/schema'
-import driver, { getDatabase } from '../database'
+import { getDatabase } from '../database'
 import setupTable from '../setupTable'
 import accessTable from './tables/access'
 import userTable from './tables/user'
@@ -56,7 +56,7 @@ describe('my database tests', () => {
   it('should generate correct schema', async () => {
     const database = await getDatabase()
     const base = path.join(__dirname, './metadata')
-    const metadata = await extractMetadata(base, driver)
+    const metadata = await extractMetadata(base, database)
     console.log(metadata)
     const gotSchema = await generateSchema(database, metadata)
 
