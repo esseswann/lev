@@ -15,7 +15,8 @@ const QUERY: RelationshipConfig = {
   mapping: [],
   view: '',
   source: 'query',
-  cardinality: 'one'
+  cardinality: 'one',
+  fields: {}
 }
 
 const convert = (schema: Schema, operation: OperationDefinitionNode) => {
