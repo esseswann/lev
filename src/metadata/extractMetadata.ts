@@ -3,20 +3,25 @@ import fs from 'fs/promises'
 import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
-import { EntityConfig, Schema } from '.'
+import { EntityConfig, Relationship, Schema } from '.'
 import { compileViews } from './compileViews'
 import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
+import extractStructFromQuery from '../schema/getStructFromQuery'
+import { Driver, Ydb } from 'ydb-sdk'
 
-async function processMetadata(directory: string): Promise<Schema> {
+async function processMetadata(
+  directory: string,
+  driver: Driver
+): Promise<Schema> {
   const schema: Schema = new Map()
 
-  await processViews(directory, schema)
+  await processViews(directory, schema, driver)
   await processConfigs(directory, schema)
 
   return schema
 }
 
-async function processViews(directory: string, schema: Schema) {
+async function processViews(directory: string, schema: Schema, driver: Driver) {
   const viewsPath = path.join(directory, VIEWS)
   const templatesPath = path.join(directory, TEMPLATES)
 
@@ -26,14 +31,14 @@ async function processViews(directory: string, schema: Schema) {
   )) {
     const extension = path.extname(name)
     const baseName = path.basename(name, extension)
-
-    checkView(baseName, view) // FIXME: assuming checkView doesn't have side effects
+    const fields = await getFields(driver, { name: baseName, view })
 
     schema.set(`${QUERY}.${baseName}`, {
       view,
       name: baseName,
       cardinality: 'many',
-      mapping: []
+      mapping: [],
+      fields
     })
   }
 }
@@ -61,11 +66,14 @@ async function processConfigs(directory: string, schema: Schema) {
     const config = fromYaml(content)
 
     for (const [key, relationship] of Object.entries(config.relationships)) {
-      const target = schema.get(`${QUERY}.${relationship.name}`)
+      const name = relationship.name
 
-      if (!target) throw new Error(`No view present for ${relationship.name}`)
+      const target = schema.get(`${QUERY}.${name}`)
+
+      if (!target) throw new Error(`No view present for ${name}`)
 
       const relationshipConfig = {
+        fields: {},
         ...relationship,
         view: target.view
       }
@@ -90,6 +98,32 @@ const fromYaml = (input: string) => {
   const result = EntityConfig.decode(json)
   if (isLeft(result)) throw new Error(PathReporter.report(result).join('\n'))
   return result.right
+}
+
+async function getFields(
+  driver: Driver,
+  view: Pick<Relationship, 'name' | 'view'>
+) {
+  const fields: Record<string, string> = {}
+  for await (const field of getViewTypings(driver, view))
+    fields[field.name] = field.type
+  return fields
+}
+
+async function* getViewTypings(
+  driver: Driver,
+  view: Pick<Relationship, 'name' | 'view'>
+) {
+  const struct = await extractStructFromQuery(driver, view)
+  if (struct.members)
+    for (const field of struct.members) {
+      // FIXME should handle non-primitive types
+      if (field.name && field.type?.typeId) {
+        const name = field.name
+        const type = Ydb.Type.PrimitiveTypeId[field.type.typeId]
+        yield { name, type }
+      }
+    }
 }
 
 export default processMetadata

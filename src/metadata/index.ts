@@ -22,13 +22,29 @@ const RelationshipConfig = t.type({
   mapping: t.array(Mapping)
 })
 
+const View = t.type({
+  view: t.string
+})
+
+// TODO this logic is needed for mor complex cases like Struct column
+
+// type Field = {
+//   [key: string]: string | Field
+// }
+
+// const TypeUnion: t.Type<Field[string]> = t.recursion(
+//   'TypeUnion',
+//   () => FieldValue
+// )
+
+// const FieldValue: t.Type<Field[string]> = t.union([t.string, Field])
+
+const Field = t.record(t.string, t.string)
+
+const Fields = t.type({ fields: Field })
+
 export const Relationship = t.intersection(
-  [
-    RelationshipConfig,
-    t.type({
-      view: t.string
-    })
-  ],
+  [RelationshipConfig, View, Fields],
   'Relationship'
 )
 

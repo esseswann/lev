@@ -5,11 +5,11 @@ import {
   GraphQLSchema
 } from 'graphql'
 import { ObjMap } from 'graphql/jsutils/ObjMap'
-import extractTypes from 'ydb-codegen/lib/extractIo/extractTypes'
 import { Driver, Ydb } from 'ydb-sdk'
 import caseConverters from '../caseConverters'
 import { Relationship, Schema } from '../metadata'
 import { ConverterContext } from './context'
+import getStructFromQuery from './getStructFromQuery'
 import { convertStruct } from './graphqlConverters'
 
 const generateSchema = async (
@@ -64,18 +64,6 @@ const generateSchema = async (
   })
 
   return schema
-}
-
-const getStructFromQuery = async (
-  driver: Driver,
-  value: Pick<Relationship, 'name' | 'view'>
-): Promise<Ydb.IStructType> => {
-  const query = `${value.view}\nselect * from \$${value.name};`
-  const { queryAst } = await driver.tableClient.withSession((session) =>
-    session.explainQuery(query)
-  )
-  const outputs = extractTypes(queryAst).outputs
-  return outputs[outputs.length - 1].listType?.item?.structType!
 }
 
 export default generateSchema
