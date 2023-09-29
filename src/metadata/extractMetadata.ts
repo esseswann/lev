@@ -29,7 +29,7 @@ async function processViews(directory: string, schema: Schema) {
 
     checkView(baseName, view) // FIXME: assuming checkView doesn't have side effects
 
-    schema.set(`${QUERY}.${name}`, {
+    schema.set(`${QUERY}.${baseName}`, {
       view,
       name: baseName,
       cardinality: 'many',
