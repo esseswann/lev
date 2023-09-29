@@ -3,11 +3,11 @@ import fs from 'fs/promises'
 import { PathReporter } from 'io-ts/lib/PathReporter'
 import path from 'path'
 import yaml from 'yaml'
+import { Driver, Ydb } from 'ydb-sdk'
 import { EntityConfig, Relationship, Schema } from '.'
+import extractStructFromQuery from '../schema/getStructFromQuery'
 import { compileViews } from './compileViews'
 import { CONFIGS, QUERY, TEMPLATES, VIEWS } from './constants'
-import extractStructFromQuery from '../schema/getStructFromQuery'
-import { Driver, Ydb } from 'ydb-sdk'
 
 async function processMetadata(
   directory: string,
@@ -68,7 +68,8 @@ async function processConfigs(directory: string, schema: Schema) {
     for (const [key, relationship] of Object.entries(config.relationships)) {
       const name = relationship.name
 
-      const target = schema.get(`${QUERY}.${name}`)
+      const schemaName = `${QUERY}.${name}` as `${string}.${string}`
+      const target = schema.get(schemaName)
 
       if (!target) throw new Error(`No view present for ${name}`)
 
