@@ -2,7 +2,7 @@ import cleanQuery from './cleanQuery'
 
 export const extractSections = (view: string): TemplateSections => {
   const declaresRegex =
-    /declare \$(?<varName>[\w\d]+) as (?<type>[\w\d]+)( = (?<defaultValue>[\w\d]+))?;\s*/g
+    /declare \$(?<varName>[\w\d]+) as (?<type>[\w\d]+)( = (?<defaultValue>[\w\d]+));?\s*/g
 
   const declares = new Map<string, Declare>()
   let match
@@ -29,7 +29,6 @@ export const mergeDeclares = (left: Declares, right: Declares) => {
 
 export const compileDeclares = (declares: Declares) => {
   let result = ''
-  console.log('comipleDeclares', declares)
   for (const declare of declares) result += compileDeclare(declare)
   return result
 }

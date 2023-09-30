@@ -14,7 +14,7 @@ export const compileTemplates = (
     const compiled = compileTemplate(templates, new Set(path), match[1])
     if (compiled) {
       result.declares = mergeDeclares(result.declares, compiled.declares)
-      result.body += compiled.body
+      result.body = compiled.body + result.body
     }
   }
   return result
