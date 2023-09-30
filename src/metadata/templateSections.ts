@@ -2,13 +2,14 @@ import cleanQuery from './cleanQuery'
 
 export const extractSections = (view: string): TemplateSections => {
   const declaresRegex = /declare\s+\$(?<key>\w+)\s+as\s+(?<type>.+?)(?:;|$)/gm
+  const cleaned = cleanQuery(view)
 
   const declares = new Map<string, Declare>()
   let match
-  while ((match = declaresRegex.exec(view)) !== null)
+  while ((match = declaresRegex.exec(cleaned)) !== null)
     if (match.groups) declares.set(match.groups['key'], match.groups as Declare)
 
-  const body = cleanQuery(view.replaceAll(declaresRegex, '').trim())
+  const body = cleaned.replaceAll(declaresRegex, '').trim()
 
   return { declares, body }
 }
