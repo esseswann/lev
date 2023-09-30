@@ -1,0 +1,1 @@
+declare $connectionId as Utf8; 

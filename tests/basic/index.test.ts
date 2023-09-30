@@ -4,7 +4,7 @@ import path from 'path'
 import { TypedData } from 'ydb-sdk'
 import extractMetadata from '../../src/metadata/extractMetadata'
 import generateSchema from '../../src/schema'
-import database from '../database'
+import { getDatabase } from '../database'
 import setupTable from '../setupTable'
 import accessTable from './tables/access'
 import userTable from './tables/user'
@@ -13,9 +13,9 @@ import userData from './tables/user/data'
 const dirname = __dirname.split('/').pop()
 
 beforeAll(async () => {
-  const timeout = 10000
-  await database.ready(timeout)
-  await database.tableClient.withSessionRetry(async (session) =>
+  const database = await getDatabase()
+
+  await database.tableClient.withSession(async (session) =>
     Promise.all([
       setupTable(session, `${dirname}/user`, userTable, userData),
       setupTable(session, `${dirname}/access`, accessTable)
@@ -24,17 +24,24 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await database.tableClient.withSessionRetry(async (session) =>
-    Promise.all([
-      session.dropTable(`${dirname}/user`),
-      session.dropTable(`${dirname}/access`)
-    ])
-  )
-  await database.schemeClient.removeDirectory(dirname!)
+  const database = await getDatabase()
+
+  try {
+    await database.tableClient.withSession(async (session) =>
+      Promise.all([
+        session.dropTable(`${dirname}/user`),
+        session.dropTable(`${dirname}/access`)
+      ])
+    )
+    await database.schemeClient.removeDirectory(dirname!)
+  } finally {
+    await database.destroy()
+  }
 })
 
 describe('my database tests', () => {
-  test('should insert data into the database', async () => {
+  it('should insert data into the database', async () => {
+    const database = await getDatabase()
     const query = `SELECT * FROM \`${dirname}/user\` where id = 1`
     const result = await database.tableClient.withSessionRetry(
       async (session) => {
@@ -45,7 +52,9 @@ describe('my database tests', () => {
     )
     expect(result[0]['id']).toBe(1)
   })
-  test('should generate correct schema', async () => {
+
+  it('should generate correct schema', async () => {
+    const database = await getDatabase()
     const base = path.join(__dirname, './metadata')
     const metadata = await extractMetadata(base)
     const gotSchema = await generateSchema(database, metadata)
