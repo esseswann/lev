@@ -4,7 +4,8 @@ const cleanQuery = (str: string) => {
     .replace(/\/\*[^]*?\*\//g, '') // remove multi-line comments
     .replace(/\s{1,}/g, ' ') // minify
     .trim()
-  if (cleaned[cleaned.length - 1] !== ';') cleaned += ';'
+  // FIXME This check needs to be checked
+  if (cleaned[cleaned.length - 1] !== ';' && cleaned.length > 2) cleaned += ';'
   return cleaned
 }
 
