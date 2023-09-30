@@ -8,6 +8,7 @@ import {
   getTemplates,
   resetTemplates
 } from './getTemplates'
+import { compileDeclares } from './templateSections'
 
 export async function* compileViews(
   viewsPath: PathLike,
@@ -26,9 +27,11 @@ export async function* compileViews(
     const name = dirent.name
     const templateLikeView = await getTemplate(dirent)
     templates.set(name, templateLikeView)
-    const result = compileTemplate(templates, new Set(), name)
+    const sections = compileTemplate(templates, new Set(), name)!
+    sections.declares = new Map([...sections.declares].reverse())
     templates.delete(name)
     unusedTemplates.push(...resetTemplates(templates))
+    const result = compileDeclares(sections.declares) + sections.body
     yield { name, result }
   }
   if (unusedTemplates.length) {

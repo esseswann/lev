@@ -1,5 +1,5 @@
-import cleanQuery from './cleanQuery'
 import { Template, Templates } from './getTemplates'
+import { extractSections, mergeDeclares } from './templateSections'
 
 const IMPORT_REGEX = /--\s*import\s+(\S+\.sql)/g
 
@@ -9,17 +9,23 @@ export const compileTemplates = (
   template: Template
 ) => {
   const matches = template.content.matchAll(IMPORT_REGEX)
-  let result = ''
-  for (const match of matches)
-    result += compileTemplate(templates, new Set(path), match[1])
-  return result + cleanQuery(template.content)
+  const result = extractSections(template.content)
+  for (const match of matches) {
+    const compiled = compileTemplate(templates, new Set(path), match[1])
+    if (compiled) {
+      result.declares = mergeDeclares(result.declares, compiled.declares)
+      result.body = compiled.body + result.body
+    }
+  }
+  return result
 }
 
 export const compileTemplate = (
   templates: Templates,
   path: Set<string>,
   name: string
-): string => {
+) => {
+  // FIXME should not return null
   const template = templates.get(name)
   if (!template) throw new Error(`Template ${name} does not exist`)
   if (path.has(name))
@@ -29,7 +35,7 @@ export const compileTemplate = (
     console.warn(
       `${name} has already been imported in ${template.processedByPath}, skipping`
     )
-    return ''
+    return null
   } else {
     template.processedByPath = getPath(path)
   }
