@@ -10,7 +10,6 @@ export const extractSections = (view: string): TemplateSections => {
     if (match.groups) declares.set(match[1], match.groups as Declare)
 
   const body = cleanQuery(view.replace(declaresRegex, '').trim())
-  console.log(body)
 
   return { declares, body }
 }
