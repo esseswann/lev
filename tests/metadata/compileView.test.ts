@@ -35,7 +35,7 @@ describe('compile view', () => {
     for await (const { result } of compileViews(viewsPath, templatesPath))
       views.push(result)
     const targetViews = [
-      'declare $connectionId as Utf8;declare $role as Utf8;select $connectionId;select $role;'
+      'declare $connectionId as Utf8;declare $role as Utf8;declare $kek as Optional<List<Struct< test: Utf8, plest: Utf8 >>>;select $connectionId;select $role;'
     ]
     expect(views).toEqual(targetViews)
   })
