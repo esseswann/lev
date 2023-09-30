@@ -28,6 +28,7 @@ export async function* compileViews(
     const templateLikeView = await getTemplate(dirent)
     templates.set(name, templateLikeView)
     const sections = compileTemplate(templates, new Set(), name)!
+    sections.declares = new Map([...sections.declares].reverse())
     templates.delete(name)
     unusedTemplates.push(...resetTemplates(templates))
     const result = compileDeclares(sections.declares) + sections.body

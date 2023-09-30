@@ -10,6 +10,7 @@ export const extractSections = (view: string): TemplateSections => {
     if (match.groups) declares.set(match[1], match.groups as Declare)
 
   const body = cleanQuery(view.replace(declaresRegex, '').trim())
+  console.log(body)
 
   return { declares, body }
 }
@@ -27,16 +28,17 @@ export const mergeDeclares = (left: Declares, right: Declares) => {
 }
 
 export const compileDeclares = (declares: Declares) => {
-  const result: string[] = []
-  for (const declare of declares) result.push(compileDeclare(declare))
-  return result.join(';')
+  let result = ''
+  console.log('comipleDeclares', declares)
+  for (const declare of declares) result += compileDeclare(declare)
+  return result
 }
 
 const compileDeclare = (declare: [string, Declare]): string => {
   const [key, { type, defaultValue }] = declare
-  let base = `declare ${key} as ${type}`
+  let base = `declare $${key} as ${type}`
   if (defaultValue) base += ` = ${defaultValue}`
-  return base
+  return `${base};`
 }
 
 export type TemplateSections = {
