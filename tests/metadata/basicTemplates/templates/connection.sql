@@ -1,1 +1,2 @@
-declare $connectionId as Utf8; 
+declare $connectionId as Utf8;
+select $connectionId
