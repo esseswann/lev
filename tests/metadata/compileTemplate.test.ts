@@ -1,6 +1,7 @@
 import { join } from 'path'
 import { compileTemplate } from '../../src/metadata/compileTemplates'
 import { getTemplates } from '../../src/metadata/getTemplates'
+import { compileSections } from '../../src/metadata/templateSections'
 
 describe('compile template', () => {
   const base = __dirname
@@ -8,7 +9,8 @@ describe('compile template', () => {
   it('should compile template', async () => {
     const path = join(base, 'basicTemplates/templates')
     const templates = await getTemplates(path)
-    const result = compileTemplate(templates, new Set(['root']), 'role.sql')
+    const sections = compileTemplate(templates, new Set(['root']), 'role.sql')
+    const result = compileSections(sections!)
     expect(result).toContain('connectionId') // FIXME
   })
 

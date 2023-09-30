@@ -25,6 +25,7 @@ export const compileTemplate = (
   path: Set<string>,
   name: string
 ) => {
+  // FIXME should not return null
   const template = templates.get(name)
   if (!template) throw new Error(`Template ${name} does not exist`)
   if (path.has(name))

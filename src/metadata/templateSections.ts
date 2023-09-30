@@ -14,6 +14,9 @@ export const extractSections = (view: string): TemplateSections => {
   return { declares, body }
 }
 
+export const compileSections = (sections: TemplateSections): string =>
+  compileDeclares(sections.declares) + sections.body
+
 export const mergeDeclares = (left: Declares, right: Declares) => {
   for (const [key, value] of right) {
     const current = left.get(key)
