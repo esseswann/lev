@@ -21,7 +21,7 @@ jobs:
           node-version: 20
       - run: npm ci
       - name: Add authorized key
-        run: echo '${{ secrets.authorized_key }}' > tests/authorized_key.json
+        run: echo '${{ secrets.AUTHORIZED_KEY }}' > tests/authorized_key.json
       - name: Run tests
         env:
           DATABASE_NAME: ${{ inputs.DATABASE_NAME }}

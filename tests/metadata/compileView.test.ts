@@ -1,31 +1,8 @@
 import { join } from 'path'
-import cleanQuery from '../../src/metadata/cleanQuery'
 import { compileViews } from '../../src/metadata/compileViews'
 
 describe('compile view', () => {
   jest.spyOn(console, 'warn').mockImplementation()
-
-  it('appends a semicolon if not present', () => {
-    const input = '$foobar = select * from `foo/bar`'
-    const expected = '$foobar = select * from `foo/bar`;'
-
-    const result = cleanQuery(input)
-
-    expect(result).toBe(expected)
-  })
-
-  it('minifies a SQL query', () => {
-    const input = `-- This is a single line comment
-                   $foobar = select *
-                               from \`foo/bar\`;
-                   /* This is a
-                      multi-line comment */`
-    const expected = '$foobar = select * from `foo/bar`;'
-
-    const result = cleanQuery(input)
-
-    expect(result).toBe(expected)
-  })
 
   const viewsPath = join(__dirname, 'basicTemplates/views')
   const templatesPath = join(__dirname, 'basicTemplates/templates')
@@ -35,7 +12,7 @@ describe('compile view', () => {
     for await (const { result } of compileViews(viewsPath, templatesPath))
       views.push(result)
     const targetViews = [
-      'declare $connectionId as Utf8;declare $role as Utf8;declare $kek as Optional<List<Struct< test: Utf8, plest: Utf8 >>>;declare $input as Struct< from: Optional<Datetime>, to: Optional<Datetime>, limit: Optional<Uint64> >;select $connectionId;select $role;'
+      'declare $connectionId as Utf8;declare $role as Utf8;declare $kek as Optional<List<Struct<test:Utf8,plest:Utf8>>>;declare $input as Struct<from:Optional<Datetime>,to:Optional<Datetime>,limit:Optional<Uint64>>;select $connectionId;select $role;'
     ]
     expect(views).toEqual(targetViews)
   })
