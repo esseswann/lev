@@ -10,21 +10,23 @@ describe('compile view', () => {
     const testCases = [
       {
         description: 'should removes single and multi-line comments',
-        input: `-- This is a single line comment
-                    $foobar = select *
-                                from \`foo/bar\`;
-                    /* This is a
-                       multi-line comment */`,
+        input: `
+-- This is a single line comment
+$foobar = select *
+            from \`foo/bar\`;
+/* This is a
+    multi-line comment */`,
         expected: '$foobar = select * from `foo/bar`;'
       },
       {
         description: 'should remove spaces around specific symbols',
-        input: `-- import connection.sql
-      declare $input as Struct<
-        from: Optional<Datetime>,
-        to:  Optional<Datetime>,
-        limit: Optional<Uint64>
-      >;`,
+        input: `
+-- import connection.sql
+declare $input as Struct<
+  from: Optional<Datetime>,
+  to:  Optional<Datetime>,
+  limit: Optional<Uint64>
+>;`,
         expected:
           'declare $input as Struct<from:Optional<Datetime>,to:Optional<Datetime>,limit:Optional<Uint64>>;'
       }
