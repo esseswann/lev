@@ -10,8 +10,7 @@ jobs:
     uses: ./.github/workflows/test-base.yml
     with:
       DATABASE_NAME: ${{ vars.DATABASE_NAME }}
-    secrets:
-      authorized_key: inherit
+    secrets: inherit
 
   publish-gpr:
     runs-on: ubuntu-latest
