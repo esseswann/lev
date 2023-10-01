@@ -2,3 +2,7 @@ node_modules
 lib
 tests/authorized_key.json
 .env*
+
+# OS-specific
+.DS_Store
+Thumbs.db
