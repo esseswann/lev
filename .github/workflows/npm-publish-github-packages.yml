@@ -13,6 +13,7 @@ jobs:
     secrets: inherit
 
   publish-gpr:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
