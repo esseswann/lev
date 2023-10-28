@@ -10,13 +10,15 @@ export const compileTemplates = (
 ) => {
   const matches = template.content.matchAll(IMPORT_REGEX)
   const result = extractSections(template.content)
+  let compiledTemplates = ''
   for (const match of matches) {
     const compiled = compileTemplate(templates, new Set(path), match[1])
     if (compiled) {
       result.declares = mergeDeclares(result.declares, compiled.declares)
-      result.body = compiled.body + result.body
+      compiledTemplates += compiled.body
     }
   }
+  result.body = compiledTemplates + result.body
   return result
 }
 
