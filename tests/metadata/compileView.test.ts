@@ -12,7 +12,7 @@ describe('compile view', () => {
     for await (const { result } of compileViews(viewsPath, templatesPath))
       views.push(result)
     const targetViews = [
-      'declare $connectionId as Utf8;declare $role as Utf8;declare $kek as Optional<List<Struct<test:Utf8,plest:Utf8>>>;declare $input as Struct<from:Optional<Datetime>,to:Optional<Datetime>,limit:Optional<Uint64>>;select $connectionId;select $role;'
+      `declare $connectionId as Utf8;declare $role as Utf8;declare $kek as Optional<List<Struct<test:Utf8,plest:Utf8>>>;declare $input as Struct<from:Optional<Datetime>,to:Optional<Datetime>,limit:Optional<Uint64>>;select $connectionId;$role = 'role';$access = 'access';select $role;`
     ]
     expect(views).toEqual(targetViews)
   })
