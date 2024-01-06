@@ -7,7 +7,7 @@ export const getTemplates = async (templatesPath: PathLike) => {
   const dir = await fs.opendir(templatesPath, { recursive: true })
   for await (const dirent of dir)
     if (dirent.isFile()) {
-      const filePath = dirent.path
+      const filePath = path.join(dirent.path, dirent.name)
       if (path.extname(filePath) !== '.sql') continue
       const template = await getTemplate(dirent)
       templates.set(path.relative(templatesPath.toString(), filePath), template)
@@ -35,7 +35,7 @@ export type Template = {
 }
 
 export const getTemplate = async (dirent: Dirent): Promise<Template> => {
-  const filePath = dirent.path
+  const filePath = path.join(dirent.path, dirent.name)
   const content = await fs.readFile(filePath, 'utf-8')
   return { filePath, content, processedByPath: '' }
 }
